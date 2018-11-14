@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:key="api_base_url"
+        android:selectAllOnFocus="true"
+        android:singleLine="false"
+        android:title="API Base URL"
+        android:summary="Set the API base URL here"
+        android:defaultValue="http://www.bulan-baru.com/forecast/api/"/>
+    <CheckBoxPreference
+        android:key="use_device_location"
+        android:title="Enable Device Location"
+        android:summaryOn="Use the device GPS"
+        android:summaryOff="Use a server supplied location"
+        android:defaultValue="true"/>
+    <ListPreference
+        android:entries="@array/settings.location_updates_min_time.values"
+        android:entryValues="@array/settings.location_updates_min_time.values"
+        android:key="location_update_min_time"
+        android:numeric="integer"
+        android:summary="@string/settings.location_updates_min_time.prompt"
+        android:title="Location Updates (seconds)" />
+    <ListPreference
+        android:entries="@array/settings.location_updates_min_dist.values"
+        android:entryValues="@array/settings.location_updates_min_dist.values"
+        android:key="location_update_min_distance"
+        android:numeric="integer"
+        android:summary="@string/settings.location_updates_min_dist.prompt"
+        android:title="Location Updates (meters)" />
+</PreferenceScreen>

@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">BB Forecast</string>
+    <string name="settings.location_updates_min_time.prompt">Select interval between location updates</string>
+    <string name="settings.location_updates_min_time.devault_value">20</string>
+    <string-array name="settings.location_updates_min_time.values" translatable="false">
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
+    </string-array>
+    <string name="settings.location_updates_min_dist.prompt">Select location accuracy required to trigger updates</string>
+    <string name="settings.location_updates_min_dist.devault_value">0</string>
+    <string-array name="settings.location_updates_min_dist.values" translatable="false">
+        <item>0</item>
+        <item>10</item>
+        <item>20</item>
+        <item>50</item>
+        <item>100</item>
+    </string-array>
+    <string name="menus.options_menu.settings">Settings</string>
+    <string name="menus.options_menu.about">About</string>
+    <string name="menus.options_menu.help">Help</string>
+</resources>

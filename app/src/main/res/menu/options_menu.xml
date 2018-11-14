@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/settings"
+        android:title="@string/menus.options_menu.settings"
+        android:showAsAction="ifRoom"
+        android:onClick="openSettings"/>
+    <item android:id="@+id/about"
+        android:title="@string/menus.options_menu.about"
+        android:showAsAction="ifRoom"
+        android:onClick="openAbout"/>
+    <item android:id="@+id/help"
+        android:title="@string/menus.options_menu.help"
+        android:showAsAction="ifRoom"
+        android:onClick="openHelp"/>
+</menu>
