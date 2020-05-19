@@ -185,7 +185,6 @@ abstract public class ClientConnection {
         String serialized = message.serialize();
         write(serialized);
         messagesSent++;
-
     }
 
     protected String read() throws IOException{
