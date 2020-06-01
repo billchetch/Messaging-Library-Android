@@ -34,6 +34,7 @@ abstract public class ClientConnection {
     protected boolean remainConnected = false;
     protected int connectionTimeout = 0;
     protected int activityTimeout = 0;
+    public boolean reconnect = true;
 
     private ConnectionState state = ConnectionState.NOT_SET;
     private Thread cnnInboundThread = null;
@@ -161,7 +162,7 @@ abstract public class ClientConnection {
         do{
             if(isConnected() && messageQueue.size() > 0){
                 Message message = messageQueue.poll();
-                //Log.i("CC", id + " sending message: " + message.toString());
+                Log.i("CC", id + " poll sending message: " + message.toString());
                 sendMessage(message);
             }
             Thread.sleep(200);
@@ -185,7 +186,6 @@ abstract public class ClientConnection {
         String serialized = message.serialize();
         write(serialized);
         messagesSent++;
-
     }
 
     protected String read() throws IOException{
@@ -211,6 +211,9 @@ abstract public class ClientConnection {
         String data;
         try {
             data = read();
+            if(data == null || data.isEmpty()){
+                throw new Exception("read returned empty for " + id);
+            }
         } catch (IOException e){
             Log.e("CC", e.getMessage());
             throw e;
@@ -234,8 +237,6 @@ abstract public class ClientConnection {
     }
 
     public void handleReceivedMessage(Message message){
-        Log.i("CC", id + " handle: " + message.toString());
-
         if(mgr != null){
             mgr.handleReceivedMessage(this, message);
         }
@@ -252,6 +253,8 @@ abstract public class ClientConnection {
                 response.addValue("GarbageReceived", garbageReceived);
                 response.addValue("State", state);
                 response.addValue("MessageEncoding", "JSON");
+                Log.i("CC", id + " responding to STATUS_REQUEST");
+
                 send(response);
                 break;
 

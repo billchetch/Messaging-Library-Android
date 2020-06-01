@@ -83,6 +83,9 @@ public class TCPClient extends ClientConnection {
         do {
             Log.i("TCPClient", id + " waiting to receive...");
             receiveMessage();
+            if(!socket.isConnected()){
+                throw new Exception("Socket disconnected");
+            }
         } while(remainConnected);
 
         Log.i("TCPClient", id + " finished.");

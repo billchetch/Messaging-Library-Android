@@ -1,10 +1,13 @@
 package net.chetch.messaging;
 
+import android.os.Handler;
 import android.util.Log;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
@@ -31,6 +34,19 @@ public class ClientManager<T extends ClientConnection> {
 
     ConnectionRequest currentRequest = null;
     HashMap<String, ClientConnection> connections = new HashMap<>();
+    HashMap<String, String> reconnect = new HashMap<>();
+
+    boolean keepAliveStarted = false;
+    Handler keepAliveHandler = new Handler();
+    Runnable keepAliveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            int nextKeepAlive = keepAlive();
+            if(nextKeepAlive > 0) {
+                keepAliveHandler.postDelayed(this, nextKeepAlive);
+            }
+        }
+    };
 
     int incrementFrom = 1;
 
@@ -39,6 +55,16 @@ public class ClientManager<T extends ClientConnection> {
         classOfT = cls;
     }
 
+    protected void startKeepAlive(int timerDelay){
+        if(keepAliveStarted)return;
+        keepAliveHandler.postDelayed(keepAliveRunnable, timerDelay);
+        keepAliveStarted = true;
+    }
+
+    protected void stopKeepAlive(){
+        keepAliveHandler.removeCallbacks(keepAliveRunnable);
+        keepAliveStarted = false;
+    }
 
     public ClientConnection getConnection(String idOrName){
 
@@ -75,6 +101,14 @@ public class ClientManager<T extends ClientConnection> {
         if(cnn == primaryConnection && currentRequest != null){
             currentRequest.failed = true;
             Log.i("CMGR", "Setting current request as failed");
+        }
+
+        if(cnn != primaryConnection && connections.containsKey(cnn.id)){
+            Log.i("CMGR", "removing " + cnn.id + " and adding to reconnect list");
+            connections.remove(cnn.id);
+            reconnect.put(cnn.name, cnn.getConnectionString());
+            stopKeepAlive();
+            startKeepAlive(1000);
         }
     }
 
@@ -113,11 +147,37 @@ public class ClientManager<T extends ClientConnection> {
             cnn = currentRequest.connection;
         }
         currentRequest = null;
+        startKeepAlive(10000);
         return cnn;
     }
 
-    protected void keepAlive(){
+    protected int keepAlive(){
 
+        Log.i("CMGR", "Keep Alive Called!");
+
+        for(Map.Entry<String, ClientConnection> entry : connections.entrySet()){
+            ClientConnection cnn = entry.getValue();
+            if(cnn.isConnected()){
+                cnn.sendPing();
+            }
+        }
+
+        List<String> toRemove = new ArrayList<>();
+        for(Map.Entry<String, String> entry : reconnect.entrySet()){
+            try {
+                Log.i("CC", "reconnecting " + entry.getKey() + " to " + entry.getValue());
+                connect(entry.getValue(), entry.getKey(), 10000);
+                toRemove.add(entry.getKey());
+            } catch (Exception e){
+                Log.e("CMGR", "keepAlive: " + e.getMessage());
+            }
+        }
+
+        for(String key : toRemove){
+            reconnect.remove(key);
+        }
+
+        return 2*60*1000;
     }
 
     protected T createPrimaryConnection(String connectionString){
