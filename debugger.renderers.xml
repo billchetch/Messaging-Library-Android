@@ -3,6 +3,7 @@
     <Renderer ID="ToStringRenderer">
       <option name="NAME" value="unnamed" />
       <option name="ENABLED" value="false" />
+      <option name="ON_DEMAND" value="true" />
     </Renderer>
     <Renderer ID="ClassRenderer">
       <option name="NAME" value="unnamed" />
