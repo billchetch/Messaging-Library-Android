@@ -52,6 +52,8 @@ abstract public class ClientConnection {
 
     private List<IMessageHandler> handlers = new ArrayList<>();
 
+    private List<MessageFilter> subscriptionFilters = new ArrayList<>();
+
     abstract public String getConnectionString();
     abstract public void parseConnectionString(String connectionString) throws Exception;
     abstract public void parseMessage(Message message) throws Exception;
@@ -78,7 +80,15 @@ abstract public class ClientConnection {
     }
 
     public void addHandler(IMessageHandler handler){
-        handlers.add(handler);
+        if(!handlers.contains(handler)) {
+            handlers.add(handler);
+        }
+    }
+
+    public void removeHandler(IMessageHandler handler){
+        if(handlers.contains(handler)){
+            handlers.remove(handler);
+        }
     }
 
     public void handleConnectionError(Exception e){
@@ -170,10 +180,12 @@ abstract public class ClientConnection {
         Log.i("CC", id + " exiting poll messages");
     }
 
+    //use this method for general sending
     public void send(Message message){
         messageQueue.add(message);
     }
 
+    //this method is used by the pollQueue method to send a message
     protected void sendMessage(Message message) throws Exception{
         if (name != null && message.Sender == null)
         {
@@ -282,5 +294,28 @@ abstract public class ClientConnection {
         message.Type = MessageType.STATUS_REQUEST;
         message.Target = serverID;
         send(message);
+    }
+
+    public void subscribe(MessageFilter messageFilter) throws Exception
+    {
+        if(messageFilter.Sender == null || messageFilter.Sender == "")
+        {
+            throw new Exception("To subscribe the message filter must have a Sender value");
+        }
+        if (!subscriptionFilters.contains(messageFilter))
+        {
+            subscriptionFilters.add(messageFilter);
+        }
+
+        addHandler(messageFilter);
+        subscribe(messageFilter.Sender);
+    }
+
+    public void subscribe(String clientName){
+        Message msg = new Message();
+        msg.Type = MessageType.SUBSCRIBE;
+        msg.setValue("Subscription request from " + name);
+        msg.addValue("Clients", clientName);
+        send(msg);
     }
 }

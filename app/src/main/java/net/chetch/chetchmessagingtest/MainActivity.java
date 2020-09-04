@@ -14,6 +14,7 @@ import android.widget.TextView;
 import net.chetch.messaging.ClientConnection;
 import net.chetch.messaging.IMessageHandler;
 import net.chetch.messaging.Message;
+import net.chetch.messaging.MessageFilter;
 import net.chetch.messaging.MessageService;
 import net.chetch.messaging.MessageType;
 import net.chetch.messaging.TCPClientManager;
@@ -38,6 +39,14 @@ public class MainActivity extends Activity implements IMessageHandler {
         try {
             client = TCPClientManager.connect(serverIP + ":" + serverPort, "tolly");
             client.addHandler(this);
+
+            client.subscribe(new MessageFilter("BBAlarms", MessageType.ALERT){
+                @Override
+                protected void onMatched(Message message) {
+                    Log.i("Main", "Message filter mapped");
+                }
+            });
+
         } catch (Exception e){
             Log.e("main", e.getMessage());
         }
