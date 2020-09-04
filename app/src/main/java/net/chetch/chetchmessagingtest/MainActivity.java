@@ -32,44 +32,24 @@ public class MainActivity extends Activity implements IMessageHandler {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        btnStart = (Button)findViewById(R.id.btnStart);
-        btnSend = (Button)findViewById(R.id.btnSend);
-        textStatus = (TextView)findViewById(R.id.textStatus);
-        btnStart.setOnClickListener(btnStartListener);
-        btnSend.setOnClickListener(btnSendListener);
         serverPort = 12000;
-        serverIP = "192.168.43.123";
+        serverIP = "192.168.1.100";
 
         try {
             client = TCPClientManager.connect(serverIP + ":" + serverPort, "tolly");
+            client.addHandler(this);
         } catch (Exception e){
             Log.e("main", e.getMessage());
         }
     }
 
     public void handleReceivedMessage(Message message, ClientConnection cnn){
-        Log.i("main",  " Recieved: " + message.toString());
+        Log.i("main",  " Received: " + message.toString());
     }
 
     public void handleConnectionError(Exception e, ClientConnection cnn){
         Log.i("main", "Error: " + e.toString());
     }
-
-    private OnClickListener btnStartListener = new OnClickListener() {
-        public void onClick(View v){
-            client.close();
-        }
-    };
-    private OnClickListener btnSendListener = new OnClickListener() {
-        public void onClick(View v){
-            Message m = new Message();
-            m.Type = MessageType.INFO;
-            m.setValue("What are we talking");
-            m.Target = "CM-Monitor";
-            client.send(m);
-        }
-    };
-
 
 
     @Override
