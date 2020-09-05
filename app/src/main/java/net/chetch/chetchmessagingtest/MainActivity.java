@@ -18,6 +18,7 @@ import net.chetch.messaging.MessageFilter;
 import net.chetch.messaging.MessageService;
 import net.chetch.messaging.MessageType;
 import net.chetch.messaging.TCPClientManager;
+import net.chetch.messaging.filters.AlertFilter;
 
 
 public class MainActivity extends Activity implements IMessageHandler {
@@ -40,7 +41,7 @@ public class MainActivity extends Activity implements IMessageHandler {
             client = TCPClientManager.connect(serverIP + ":" + serverPort, "tolly");
             client.addHandler(this);
 
-            client.subscribe(new MessageFilter("BBAlarms", MessageType.ALERT){
+            client.subscribe(new AlertFilter("BBAlarms"){
                 @Override
                 protected void onMatched(Message message) {
                     Log.i("Main", "Message filter mapped");
