@@ -19,6 +19,11 @@ import net.chetch.messaging.MessageService;
 import net.chetch.messaging.MessageType;
 import net.chetch.messaging.TCPClientManager;
 import net.chetch.messaging.filters.AlertFilter;
+import net.chetch.messaging.filters.CommandResponseFilter;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 public class MainActivity extends Activity implements IMessageHandler {
@@ -28,6 +33,8 @@ public class MainActivity extends Activity implements IMessageHandler {
     int serverPort;
     String serverIP;
     ClientConnection client;
+    Map<String, BBAlarmsMessageSchema.AlarmState> alarmStates = new HashMap<>();
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -41,13 +48,45 @@ public class MainActivity extends Activity implements IMessageHandler {
             client = TCPClientManager.connect(serverIP + ":" + serverPort, "tolly");
             client.addHandler(this);
 
-            client.subscribe(new AlertFilter("BBAlarms"){
+            client.subscribe(new AlertFilter(BBAlarmsMessageSchema.SERVICE_NAME){
                 @Override
                 protected void onMatched(Message message) {
-                    Log.i("Main", "Message filter mapped");
+                    BBAlarmsMessageSchema schema = new BBAlarmsMessageSchema(message);
+
+                    BBAlarmsMessageSchema.AlarmState state = schema.getAlarmState();
+                    TextView tv = findViewById(R.id.tvAlarmStatus);
+                    tv.setText("Alarm " + schema.getDeviceID() + " has state: " + state.name());
+
+                    Log.i("Main", "Message filter matched");
                 }
             });
 
+            client.subscribe(new CommandResponseFilter(BBAlarmsMessageSchema.SERVICE_NAME){
+                @Override
+                protected void onMatched(Message message) {
+                    BBAlarmsMessageSchema schema = new BBAlarmsMessageSchema(message);
+
+                    Map<String, BBAlarmsMessageSchema.AlarmState> states = schema.getAlarmStates();
+                    if(states != null) {
+                        for (Map.Entry<String, BBAlarmsMessageSchema.AlarmState> entry : states.entrySet()) {
+                            String key = entry.getKey();
+                            if (alarmStates.containsKey(key)) {
+                                //add alarm to display
+                            } else if (alarmStates.get(key) != states.get(key)) {
+                                //update alarm display
+                            }
+                            alarmStates.put(key, entry.getValue());
+                        }
+                    }
+
+                    List<String> help = message.getList("Help", String.class);
+
+                    Log.i("Main", "Message filter matched");
+                }
+            });
+
+            //client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS);
+            client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, "help");
         } catch (Exception e){
             Log.e("main", e.getMessage());
         }

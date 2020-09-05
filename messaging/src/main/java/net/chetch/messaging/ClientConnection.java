@@ -256,7 +256,7 @@ abstract public class ClientConnection {
         Message response;
         switch(message.Type){
             case STATUS_REQUEST:
-                response = Message.createResponse(message);
+                response = MessageSchema.createResponse(message);
                 response.addValue("ConnectionID", id);
                 response.addValue("Name", name);
                 response.addValue("Context", "CONTROLLER");
@@ -271,7 +271,7 @@ abstract public class ClientConnection {
                 break;
 
             case PING:
-                response = Message.createResponse(message);
+                response = MessageSchema.createResponse(message);
                 send(response);
                 break;
 
@@ -293,6 +293,21 @@ abstract public class ClientConnection {
         Message message = new Message();
         message.Type = MessageType.STATUS_REQUEST;
         message.Target = serverID;
+        send(message);
+    }
+
+    public void sendCommand(String target, String command){
+        sendCommand(target, command, null);
+    }
+
+    public void sendCommand(String target, String command, List<Object> arguments){
+        Message message = new Message();
+        message.Type = MessageType.COMMAND;
+        message.Target = target;
+        message.setValue(command);
+        if(arguments != null){
+            message.addValue("Arguments", arguments);
+        }
         send(message);
     }
 

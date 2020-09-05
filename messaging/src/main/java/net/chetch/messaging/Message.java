@@ -6,12 +6,66 @@ import com.google.gson.GsonBuilder;
 import net.chetch.utilities.EnumTypeAdapater;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 
 public class Message{
     static Gson gson = null;
+    //basic conversions based on expected results after deserialization (such as all numbers becom doubles)
+    //or enums are usually their ordinal value but might be their string representation
+    static private <T> T convert(Object value, Class<T> cls){
+        if(value == null)return null;
+
+        if(cls == Boolean.class){
+            Boolean b;
+            if(value.toString() == "true"){
+                b = true;
+            } else if(value.toString() == "false"){
+                b = false;
+            } else {
+                Integer n = convert(value, Integer.class);
+                b =  n > 0;
+            }
+            return (T)b;
+        } else if(cls == Integer.class){
+            Integer n;
+            if(value instanceof Double){
+                n = ((Double)value).intValue();
+            } else {
+                n = Integer.parseInt(value.toString());
+            }
+            return (T)n;
+        } else if(cls == Long.class){
+            Long n;
+            if(value instanceof Double){
+                n = ((Double)value).longValue();
+            } else {
+                n = Long.parseLong(value.toString());
+            }
+            return (T)n;
+        } else if(cls == String.class){
+            return (T)value.toString();
+        } else if(Enum.class.isAssignableFrom(cls)){
+            try{
+                Integer n = convert(value, Integer.class);
+                for(T evalue : cls.getEnumConstants()){
+                    if(((Enum)evalue).ordinal() == n )return (T)evalue;
+                }
+            } catch(Exception e){
+                //try a string
+                for(T evalue : cls.getEnumConstants()){
+                    if(((Enum)evalue).name() == value.toString())return (T)evalue;
+                }
+            }
+        } else if(cls == Double.class){
+            return (T)(Object)Double.parseDouble((value.toString()));
+        }
+        return null;
+    }
+
 
     public String ID;
     public String ResponseID;
@@ -57,23 +111,57 @@ public class Message{
 
     public int getInt(String key){
         Object val = getValue(key);
-        if(val instanceof Double){
-            return ((Double)val).intValue();
-        } else {
-            return Integer.parseInt(val.toString());
-        }
+        return convert(val, Integer.class);
     }
 
     public boolean getBoolean(String key){
-        String val = getString(key);
-        if(val == "true"){
-            return true;
-        } else if(val == "false"){
-            return false;
-        } else {
-            int n = getInt(key);
-            return n > 0;
+        Object val = getValue(key);
+        return convert(val, Boolean.class);
+    }
+
+    public long getLong(String key){
+        Object val = getValue(key);
+        return convert(val, Long.class);
+    }
+
+    public double getDouble(String key){
+        Object val = getValue(key);
+        return convert(val, Double.class);
+    }
+
+    public <T extends Enum> T getEnum(String key, Class<T> cls){
+        return getEnum(key, cls, null);
+    }
+
+    public <T extends Enum> T getEnum(String key, Class<T> cls, T defaultValue){
+        Object value = getValue(key);
+        T t = convert(value, cls);
+        return t == null ? defaultValue : t;
+    }
+
+    public <T> List<T> getList(String key, Class<T> cls){
+        List<Object> l =  (List<Object>)getValue(key);
+        if(l == null)return null;
+        List<T> l2r = new ArrayList<>();
+
+        for(Object item : l){
+            T value = convert(item, cls);
+            l2r.add(value);
         }
+
+        return l2r;
+    }
+
+    public <T> Map<String, T> getMap(String key, Class<T> cls){
+        Map<String, Object> map = (Map<String, Object>)getValue(key);
+        if(map == null)return null;
+
+        HashMap<String, T> map2return = new HashMap<>();
+        for(Map.Entry<String, Object> entry : map.entrySet()){
+            T value = convert(entry.getValue(), cls);
+            map2return.put(entry.getKey(), value);
+        }
+        return map2return;
     }
 
     public void addValue(String key, Object val){
@@ -146,29 +234,6 @@ public class Message{
         }
 
         return m;
-    }
-
-    static public Message createResponse(Message message){
-        Message response = new Message();
-        MessageType responseType = MessageType.NOT_SET;
-        switch(message.Type){
-            case STATUS_REQUEST:
-                responseType = MessageType.STATUS_RESPONSE; break;
-
-            case CONNECTION_REQUEST:
-                responseType = MessageType.CONNECTION_REQUEST_RESPONSE; break;
-
-            case COMMAND:
-                responseType = MessageType.COMMAND_RESPONSE; break;
-
-            case PING:
-                responseType = MessageType.PING_RESPONSE; break;
-        }
-        response.Type = responseType;
-        response.ResponseID = message.ID;
-        response.Target = message.Sender;
-
-        return response;
     }
 }
 
