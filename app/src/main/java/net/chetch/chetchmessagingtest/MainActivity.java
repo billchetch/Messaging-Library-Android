@@ -61,7 +61,7 @@ public class MainActivity extends Activity implements IMessageHandler {
                 }
             });
 
-            client.subscribe(new CommandResponseFilter(BBAlarmsMessageSchema.SERVICE_NAME){
+            client.subscribe(new CommandResponseFilter(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS){
                 @Override
                 protected void onMatched(Message message) {
                     BBAlarmsMessageSchema schema = new BBAlarmsMessageSchema(message);
@@ -85,8 +85,8 @@ public class MainActivity extends Activity implements IMessageHandler {
                 }
             });
 
-            //client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS);
-            client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, "help");
+            client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS);
+            //client.sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, "help");
         } catch (Exception e){
             Log.e("main", e.getMessage());
         }
