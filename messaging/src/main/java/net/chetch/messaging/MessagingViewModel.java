@@ -2,19 +2,24 @@ package net.chetch.messaging;
 
 import android.util.Log;
 
+import net.chetch.webservices.DataStore;
+import net.chetch.webservices.WebserviceViewModel;
+import net.chetch.webservices.network.Service;
+import net.chetch.webservices.network.Services;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModel;
 
-public class MessagingViewModel extends ViewModel implements IMessageHandler {
+public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler {
+    public static final String CHETCH_MESSAGING_SERVICE = "Chetch Messaging";
 
     List<MessageFilter> messageFilters = new ArrayList<MessageFilter>();
     ClientConnection client;
     String clientName = "AndroidCMClient";
-    String serverIP = "192.168.1.100";;
-    int serverPort = 12000;
+    String connectionString;
 
     public MessagingViewModel(){
         //empty
@@ -27,9 +32,8 @@ public class MessagingViewModel extends ViewModel implements IMessageHandler {
     public void setClientName(String clientName){
         this.clientName = clientName;
     }
-    public void setConnectionDetails(String serverIP, int serverPort){
-        this.serverIP = serverIP;
-        this.serverPort = serverPort;
+    public void setConnectionString(String connectionString){
+        this.connectionString = connectionString;
     }
 
     public ClientConnection connectClient(Observer observer) throws Exception{
@@ -38,18 +42,15 @@ public class MessagingViewModel extends ViewModel implements IMessageHandler {
         }
         try {
             if(clientName == null || clientName == "")throw new Exception("clientName required");
-            if(serverIP == null || serverIP == "")throw new Exception("serverIP required");
-            if(serverPort <= 0)throw new Exception("A valid serverPort required");
+            if(connectionString == null || connectionString == "")throw new Exception("connectionString required");
 
-            client = TCPClientManager.connect(serverIP + ":" + serverPort, clientName);
+            client = TCPClientManager.connect(connectionString, clientName);
             client.addHandler(this);
             for(MessageFilter f : messageFilters) {
                 client.subscribe(f);
             }
             onClientConnected();
-            if(observer != null){
-                observer.onChanged(clientName);
-            }
+            notifyObserver(observer, clientName);
             return client;
         } catch (Exception e){
             Log.e("main", e.getMessage());
@@ -93,6 +94,31 @@ public class MessagingViewModel extends ViewModel implements IMessageHandler {
     @Override
     public void handleConnectionError(Exception e, ClientConnection cnn) {
         //a hook
+    }
+
+    @Override
+    public DataStore loadData(Observer observer) {
+        DataStore<?> dataStore = super.loadData(observer);
+        dataStore.observe(services->{
+            Log.i("MVM", "Loaded data...");
+            try {
+                connectClient(observer);
+            } catch (Exception e){
+                Log.e("MVM", "Client connection error: " + e.getMessage());
+            }
+        });
+        return dataStore;
+    }
+
+    @Override
+    protected boolean configureServices(Services services) {
+        boolean configured = super.configureServices(services);
+        if(configured && services.hasService(CHETCH_MESSAGING_SERVICE)){
+            Log.i("MVM", "here having configured services");
+            Service cms = services.getService(CHETCH_MESSAGING_SERVICE);
+            setConnectionString(cms.getLanIP() + ":" + cms.getEndpointPort());
+        }
+        return configured;
     }
 }
 

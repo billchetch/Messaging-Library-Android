@@ -1,1 +1,2 @@
+include ':webservices'
 include ':app', ':messaging', ':utilities'

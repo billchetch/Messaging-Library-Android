@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/messaging" />
             <option value="$PROJECT_DIR$/utilities" />
+            <option value="$PROJECT_DIR$/webservices" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

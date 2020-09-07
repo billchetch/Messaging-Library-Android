@@ -17,15 +17,19 @@ import net.chetch.messaging.Message;
 import net.chetch.messaging.MessageFilter;
 import net.chetch.messaging.MessageService;
 import net.chetch.messaging.MessageType;
+import net.chetch.messaging.MessagingViewModel;
 import net.chetch.messaging.TCPClientManager;
 import net.chetch.messaging.filters.AlertFilter;
 import net.chetch.messaging.filters.CommandResponseFilter;
+import net.chetch.webservices.WebserviceViewModel;
+import net.chetch.webservices.network.NetworkRepository;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
 
@@ -33,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnStart, btnSend;
     TextView textStatus;
-    MessagingViewModel model;
+    MViewModel model;
     Map<String, BBAlarmsMessageSchema.AlarmState> alarmStates = new HashMap<>();
 
     AlertFilter onAlarmAlert = new AlertFilter(BBAlarmsMessageSchema.SERVICE_NAME){
@@ -61,25 +65,30 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    Observer dataLoadProgress  = obj -> {
+        WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress) obj;
+        String state = progress.startedLoading ? "Loading" : "Loaded";
+        String progressInfo = state + (progress.info == null ? "" : " " + progress.info.toLowerCase());
+        Log.i("Main", progressInfo);
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        model = ViewModelProviders.of(this).get(MessagingViewModel.class);
-        if(!model.isClientConnected()) {
-            try {
-                model.setConnectionDetails("192.168.1.100", 12000);
-                model.addMessageFilter(onAlarmAlert);
-                model.addMessageFilter(onListAlarms);
-                model.addMessageFilter(onAlarmStatus);
-                model.connectClient(data -> {
-                    model.getClient().sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_LIST_ALARMS);
-                });
-            } catch (Exception e) {
-                Log.e("Main", e.getMessage());
-            }
+        try {
+            //String apiBaseURL = "http://192.168.43.123:8001/api/";
+            String apiBaseURL = "http://192.168.1.100:8001/api/";
+            NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
+        } catch (Exception e) {
+            Log.e("MVM", e.getMessage());
+            return;
         }
+
+        model = ViewModelProviders.of(this).get(MViewModel.class);
+
+        model.loadData(dataLoadProgress);
     }
 
     @Override
