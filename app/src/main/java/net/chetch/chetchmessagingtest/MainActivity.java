@@ -40,31 +40,6 @@ public class MainActivity extends AppCompatActivity {
     MViewModel model;
     Map<String, BBAlarmsMessageSchema.AlarmState> alarmStates = new HashMap<>();
 
-    AlertFilter onAlarmAlert = new AlertFilter(BBAlarmsMessageSchema.SERVICE_NAME){
-        @Override
-        protected void onMatched(Message message) {
-
-            Log.i("Main", "On Alarm Alert");
-        }
-    };
-
-    CommandResponseFilter onListAlarms = new CommandResponseFilter(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_LIST_ALARMS){
-        @Override
-        protected void onMatched(Message message) {
-            Log.i("Main", "On List Alarms");
-            if(model != null && model.isClientConnected()){
-                model.getClient().sendCommand(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS);
-            }
-        }
-    };
-
-    CommandResponseFilter onAlarmStatus = new CommandResponseFilter(BBAlarmsMessageSchema.SERVICE_NAME, BBAlarmsMessageSchema.COMMAND_ALARM_STATUS){
-        @Override
-        protected void onMatched(Message message) {
-            Log.i("Main", "On Alarm Status");
-        }
-    };
-
     Observer dataLoadProgress  = obj -> {
         WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress) obj;
         String state = progress.startedLoading ? "Loading" : "Loaded";
@@ -89,6 +64,14 @@ public class MainActivity extends AppCompatActivity {
         model = ViewModelProviders.of(this).get(MViewModel.class);
 
         model.loadData(dataLoadProgress);
+
+        model.getAlarms().observe(this, alist->{
+           Log.i("Main", "Alarms list " + alist.size() + " alarms arrived!");
+        });
+
+        model.getAlarmStates().observe( this, astates->{
+            Log.i("Main", "Alarm states " + astates.size() + " states arrived!");
+        });
     }
 
     @Override

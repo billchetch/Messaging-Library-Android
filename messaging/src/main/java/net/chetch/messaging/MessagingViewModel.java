@@ -54,7 +54,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             return client;
         } catch (Exception e){
             Log.e("main", e.getMessage());
-            throw e;
+            setError(e);
+            return null;
         }
     }
 
@@ -66,7 +67,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             try {
                 client.close();
             } catch (Exception e){
-                Log.e("MessagingViewModel", e.getMessage());
+                Log.e("MessagingViewModel", "finalize: " + e.getMessage());
             }
         }
     }
