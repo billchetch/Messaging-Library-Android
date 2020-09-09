@@ -36,13 +36,13 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         this.connectionString = connectionString;
     }
 
-    public ClientConnection connectClient(Observer observer) throws Exception{
+    public ClientConnection connectClient(Observer observer) {
         if(isClientConnected()){
             return client;
         }
         try {
-            if(clientName == null || clientName == "")throw new Exception("clientName required");
-            if(connectionString == null || connectionString == "")throw new Exception("connectionString required");
+            if(clientName == null || clientName.isEmpty())throw new Exception("clientName required");
+            if(connectionString == null || connectionString.isEmpty())throw new Exception("connectionString required");
 
             client = TCPClientManager.connect(connectionString, clientName);
             client.addHandler(this);
@@ -94,7 +94,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     public void handleConnectionError(Exception e, ClientConnection cnn) {
-        //a hook
+        setError(e);
     }
 
     @Override
