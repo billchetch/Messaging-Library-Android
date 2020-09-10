@@ -277,7 +277,12 @@ abstract public class ClientConnection {
                 break;
 
             default:
+                //we split in to temp to allow for manipulation of handlers list within a particular handler
+                List<IMessageHandler> temp = new ArrayList<>();
                 for(IMessageHandler h : handlers){
+                    temp.add(h);
+                }
+                for(IMessageHandler h : temp) {
                     h.handleReceivedMessage(message, this);
                 }
                 break;
@@ -331,7 +336,8 @@ abstract public class ClientConnection {
         subscribe(messageFilter.Sender);
     }
 
-    public void subscribe(String clientName){
+    public void subscribe(String clientName) throws Exception{
+        if(clientName == null || clientName.isEmpty())throw new Exception("There must be a client to subsribe to");
         Message msg = new Message();
         msg.Type = MessageType.SUBSCRIBE;
         msg.setValue("Subscription request from " + name);
