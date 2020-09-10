@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -296,8 +297,12 @@ abstract public class ClientConnection {
         send(message);
     }
 
-    public void sendCommand(String target, String command){
-        sendCommand(target, command, null);
+    public void sendCommand(String target, String command, Object ...args){
+        List<Object> largs = null;
+        if(args != null) {
+            largs = Arrays.asList(args);
+        }
+        sendCommand(target, command, largs);
     }
 
     public void sendCommand(String target, String command, List<Object> arguments){
