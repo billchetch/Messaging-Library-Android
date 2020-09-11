@@ -52,7 +52,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        try {
+        String test = "{sdfsadfd}";
+        List<String> l = Message.split(test);
+
+        Log.i("Main", l.size() + "");
+
+        /*try {
             //String apiBaseURL = "http://192.168.43.123:8001/api/";
             String apiBaseURL = "http://192.168.1.100:8001/api/";
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
@@ -71,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
 
         model.getAlarmStates().observe( this, astates->{
             Log.i("Main", "Alarm states " + astates.size() + " states arrived!");
-        });
+        });*/
     }
 
     @Override

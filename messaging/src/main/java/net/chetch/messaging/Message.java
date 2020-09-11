@@ -222,6 +222,25 @@ public class Message{
         return val;
     }
 
+    static public List<String> split(String serialized){
+        List<String> splitted = new ArrayList<>();
+        if (serialized.indexOf("}{") >= 0) {
+            serialized = "}" + serialized + "{";
+            String[] parts = serialized.split("\\}\\{");
+            for(String part : parts)
+            {
+                if(part == null)continue;
+                part = part.trim();
+                if(part.isEmpty())continue;
+                splitted.add("{" + part + "}");
+            }
+        } else {
+            splitted.add(serialized);
+        }
+
+        return splitted;
+    }
+
     static public Message deserialize(String serialized){
 
         initSerializer();

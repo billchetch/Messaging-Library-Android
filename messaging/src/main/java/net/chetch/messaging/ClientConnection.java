@@ -219,34 +219,40 @@ abstract public class ClientConnection {
     }
 
 
-    protected void receiveMessage() throws Exception{
+    protected void receiveMessage() throws Exception {
         Message message;
         String data;
         try {
             data = read();
-            if(data == null || data.isEmpty()){
+            if (data == null || data.isEmpty()) {
                 throw new Exception("read returned empty for " + id);
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             Log.e("CC", e.getMessage());
             throw e;
         }
 
-        try {
-            Log.i("CC", "Received: " + data);
-            message = Message.deserialize(data);
-            messagesReceived++;
-        } catch(Exception e) {
-            garbageReceived++;
-            return;
+        Log.i("CC", "Received: " + data);
+        List<String> splitted = Message.split(data);
+        List<Exception> exceptions = new ArrayList<>();
+        for (String serialized : splitted){
+            try {
+                message = Message.deserialize(serialized);
+                messagesReceived++;
+            } catch (Exception e) {
+                garbageReceived++;
+                continue;
+            }
+
+            try {
+                handleReceivedMessage(message);
+            } catch (Exception e) {
+                Log.e("CC", e.getMessage());
+                exceptions.add(e);
+            }
         }
 
-        try{
-            handleReceivedMessage(message);
-        } catch (Exception e){
-            Log.e("CC", e.getMessage());
-            throw e;
-        }
+        if(exceptions.size() > 0)throw new Exception("Message.receiveMessage: resulted in " + exceptions.size() + " exceptions");
     }
 
     public void handleReceivedMessage(Message message){
