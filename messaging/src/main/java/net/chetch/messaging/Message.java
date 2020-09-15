@@ -105,6 +105,8 @@ public class Message{
         return Values.containsKey(key);
     }
 
+    public boolean hasValue(){ return hasValue("Value"); }
+
     public String getString(String key){
         return getValue(key).toString();
     }

@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModel;
 
 public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler {
     public static final String CHETCH_MESSAGING_SERVICE = "Chetch Messaging";
@@ -53,7 +52,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             notifyObserver(observer, clientName);
             return client;
         } catch (Exception e){
-            Log.e("main", e.getMessage());
+            Log.e("MessagingViewModel", e.getMessage());
             setError(e);
             return null;
         }
@@ -89,8 +88,13 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     public void handleReceivedMessage(Message message, ClientConnection cnn) {
-        //a hook
+        if(message.Type == MessageType.ERROR){
+            String msg = "ChetchMessaging error: " + (message.hasValue() ? message.getValue().toString() : "no error message available");
+            Log.e("MessagingViewModel", msg);
+            setError(new Exception(msg));
+        }
     }
+
 
     @Override
     public void handleConnectionError(Exception e, ClientConnection cnn) {
@@ -101,11 +105,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public DataStore loadData(Observer observer) {
         DataStore<?> dataStore = super.loadData(observer);
         dataStore.observe(services->{
-            Log.i("MVM", "Loaded data...");
+            Log.i("MessagingViewModel", "Loaded data...");
             try {
                 connectClient(observer);
             } catch (Exception e){
-                Log.e("MVM", "Client connection error: " + e.getMessage());
+                Log.e("MessagingViewModel", "Client connection error: " + e.getMessage());
             }
         });
         return dataStore;
@@ -115,7 +119,6 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     protected boolean configureServices(Services services) {
         boolean configured = super.configureServices(services);
         if(configured && services.hasService(CHETCH_MESSAGING_SERVICE)){
-            Log.i("MVM", "here having configured services");
             Service cms = services.getService(CHETCH_MESSAGING_SERVICE);
             setConnectionString(cms.getLanIP() + ":" + cms.getEndpointPort());
         }
