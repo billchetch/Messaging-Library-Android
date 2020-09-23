@@ -8,10 +8,15 @@ abstract public class CommandResponseFilter extends MessageFilter {
 
     String originalCommand;
 
-    public CommandResponseFilter(String sender, String originalCommand) {
-        super(sender, MessageType.COMMAND_RESPONSE);
+    public CommandResponseFilter(String sender, String requiredValues, String originalCommand) {
+        super(sender, MessageType.COMMAND_RESPONSE, requiredValues);
 
         this.originalCommand = originalCommand;
+    }
+
+    public CommandResponseFilter(String sender, String originalCommand) {
+        this(sender, null, originalCommand);
+
     }
 
     public CommandResponseFilter(String sender) {
