@@ -14,48 +14,54 @@ import androidx.lifecycle.Observer;
 
 public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler {
     public static final String CHETCH_MESSAGING_SERVICE = "Chetch Messaging";
+    static ClientConnection client;
+    static String clientName = "AndroidCMClient";
+    static String connectionString;
+    public static boolean isClientConnected(){
+        return client != null && client.isConnected();
+    }
+    static public void setClientName(String clName){
+        clientName = clName;
+    }
+    static public void setConnectionString(String cnnString){
+        connectionString = cnnString;
+    }
 
     List<MessageFilter> messageFilters = new ArrayList<MessageFilter>();
-    ClientConnection client;
-    String clientName = "AndroidCMClient";
-    String connectionString;
 
     public MessagingViewModel(){
         //empty
     }
 
-    public boolean isClientConnected(){
-        return client != null && client.isConnected();
-    }
-
-    public void setClientName(String clientName){
-        this.clientName = clientName;
-    }
-    public void setConnectionString(String connectionString){
-        this.connectionString = connectionString;
-    }
-
     public ClientConnection connectClient(Observer observer) {
-        if(isClientConnected()){
-            return client;
-        }
-        try {
-            if(clientName == null || clientName.isEmpty())throw new Exception("clientName required");
-            if(connectionString == null || connectionString.isEmpty())throw new Exception("connectionString required");
+        if(!isClientConnected()) {
+            try {
+                if (clientName == null || clientName.isEmpty())
+                    throw new Exception("clientName required");
+                if (connectionString == null || connectionString.isEmpty())
+                    throw new Exception("connectionString required");
 
-            client = TCPClientManager.connect(connectionString, clientName);
-            client.addHandler(this);
-            for(MessageFilter f : messageFilters) {
-                client.subscribe(f);
+                client = TCPClientManager.connect(connectionString, clientName);
+            } catch (Exception e) {
+                Log.e("MessagingViewModel", e.getMessage());
+                setError(e);
+                return null;
             }
-            onClientConnected();
-            notifyObserver(observer, clientName);
-            return client;
-        } catch (Exception e){
-            Log.e("MessagingViewModel", e.getMessage());
-            setError(e);
-            return null;
         }
+
+        client.addHandler(this);
+        for(MessageFilter f : messageFilters) {
+            try {
+                client.subscribe(f);
+            } catch (Exception e){
+                Log.e("MessagingViewModel", e.getMessage());
+                setError(e);
+            }
+        }
+
+        onClientConnected();
+        notifyObserver(observer, clientName);
+        return client;
     }
 
     @Override

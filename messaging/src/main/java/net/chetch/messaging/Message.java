@@ -108,7 +108,8 @@ public class Message{
     public boolean hasValue(){ return hasValue("Value"); }
 
     public String getString(String key){
-        return getValue(key).toString();
+        Object v = getValue(key);
+        return v == null ? null : v.toString();
     }
 
     public int getInt(String key){
