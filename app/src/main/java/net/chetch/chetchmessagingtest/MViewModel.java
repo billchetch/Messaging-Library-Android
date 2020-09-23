@@ -12,7 +12,6 @@ import net.chetch.webservices.network.Services;
 
 import java.util.List;
 import java.util.Map;
-Å
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;

@@ -8,21 +8,46 @@ public abstract class MessageFilter implements IMessageHandler {
 
     public String Sender;
     private List<MessageType> types = null;
+    private List<String> requiredValues = null;
 
     abstract protected void onMatched(Message message);
 
-    public MessageFilter(String sender, MessageType type)
+    public MessageFilter(String sender, MessageType type, String requiredVals)
     {
         this.Sender = sender;
         this.types = new ArrayList<MessageType>();
         this.types.add(type);
+        if(requiredVals != null){
+            requiredValues = new ArrayList<>();
+            String[] rvals = requiredVals.split(",");
+            for(String rv : rvals){
+                requiredValues.add(rv.trim());
+            }
+        }
+    }
+
+    public MessageFilter(String sender, MessageType[] types, String requiredVals)
+    {
+        this.Sender = sender;
+        this.types = Arrays.asList(types);
+        if(requiredVals != null){
+            requiredValues = new ArrayList<>();
+            String[] rvals = requiredVals.split(",");
+            for(String rv : rvals){
+                requiredValues.add(rv.trim());
+            }
+        }
+    }
+
+    public MessageFilter(String sender, MessageType type){
+        this(sender, type, null);
     }
 
     public MessageFilter(String sender, MessageType[] types)
     {
-        this.Sender = sender;
-        this.types = Arrays.asList(types);
+        this(sender, types, null);
     }
+
 
     @Override
     public void handleReceivedMessage(Message message, ClientConnection cnn) {
@@ -50,6 +75,13 @@ public abstract class MessageFilter implements IMessageHandler {
         {
             matched = types.contains(message.Type);
             if (!matched) return false;
+        }
+
+        if(requiredValues != null && requiredValues.size() > 0)
+        {
+            for(String s : requiredValues){
+                if(!message.hasValue(s))return false;
+            }
         }
 
         return matched;
