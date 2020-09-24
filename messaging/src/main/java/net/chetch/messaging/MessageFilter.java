@@ -8,33 +8,33 @@ public abstract class MessageFilter implements IMessageHandler {
 
     public String Sender;
     private List<MessageType> types = null;
-    private List<String> requiredValues = null;
+    private List<String> requiredKeys= null;
 
     abstract protected void onMatched(Message message);
 
-    public MessageFilter(String sender, MessageType type, String requiredVals)
+    public MessageFilter(String sender, MessageType type, String reqKeys)
     {
         this.Sender = sender;
         this.types = new ArrayList<MessageType>();
         this.types.add(type);
-        if(requiredVals != null){
-            requiredValues = new ArrayList<>();
-            String[] rvals = requiredVals.split(",");
+        if(reqKeys != null){
+            requiredKeys = new ArrayList<>();
+            String[] rvals = reqKeys.split(",");
             for(String rv : rvals){
-                requiredValues.add(rv.trim());
+                requiredKeys.add(rv.trim());
             }
         }
     }
 
-    public MessageFilter(String sender, MessageType[] types, String requiredVals)
+    public MessageFilter(String sender, MessageType[] types, String reqKeys)
     {
         this.Sender = sender;
         this.types = Arrays.asList(types);
-        if(requiredVals != null){
-            requiredValues = new ArrayList<>();
-            String[] rvals = requiredVals.split(",");
+        if(reqKeys != null){
+            requiredKeys = new ArrayList<>();
+            String[] rvals = reqKeys.split(",");
             for(String rv : rvals){
-                requiredValues.add(rv.trim());
+                requiredKeys.add(rv.trim());
             }
         }
     }
@@ -77,10 +77,10 @@ public abstract class MessageFilter implements IMessageHandler {
             if (!matched) return false;
         }
 
-        if(requiredValues != null && requiredValues.size() > 0)
+        if(requiredKeys != null && requiredKeys.size() > 0)
         {
-            for(String s : requiredValues){
-                if(!message.hasValue(s))return false;
+            for(String k : requiredKeys){
+                if(!message.hasValue(k))return false;
             }
         }
 
