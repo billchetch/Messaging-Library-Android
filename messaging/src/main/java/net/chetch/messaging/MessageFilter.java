@@ -19,9 +19,9 @@ public abstract class MessageFilter implements IMessageHandler {
         this.types.add(type);
         if(reqKeys != null){
             requiredKeys = new ArrayList<>();
-            String[] rvals = reqKeys.split(",");
-            for(String rv : rvals){
-                requiredKeys.add(rv.trim());
+            String[] rkeys = reqKeys.split(",");
+            for(String rk : rkeys){
+                requiredKeys.add(rk.trim());
             }
         }
     }
@@ -32,9 +32,9 @@ public abstract class MessageFilter implements IMessageHandler {
         this.types = Arrays.asList(types);
         if(reqKeys != null){
             requiredKeys = new ArrayList<>();
-            String[] rvals = reqKeys.split(",");
-            for(String rv : rvals){
-                requiredKeys.add(rv.trim());
+            String[] rkeys = reqKeys.split(",");
+            for(String rk : rkeys){
+                requiredKeys.add(rk.trim());
             }
         }
     }
