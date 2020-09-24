@@ -6,32 +6,12 @@ import net.chetch.messaging.MessageType;
 
 abstract public class CommandResponseFilter extends MessageFilter {
 
-    String originalCommand;
-
-    public CommandResponseFilter(String sender, String requiredValues, String originalCommand) {
-        super(sender, MessageType.COMMAND_RESPONSE, requiredValues);
-
-        this.originalCommand = originalCommand;
-    }
-
     public CommandResponseFilter(String sender, String originalCommand) {
-        this(sender, null, originalCommand);
-
+        super(sender, MessageType.COMMAND_RESPONSE, "OriginalCommand", originalCommand);
     }
 
-    public CommandResponseFilter(String sender) {
-        this(sender, null);
+    public CommandResponseFilter(String sender, String originalCommand, String requiredKeys, Object ... requiredVals) {
+        super(sender, MessageType.COMMAND_RESPONSE, (requiredKeys != null && requiredKeys.length() > 0 ? requiredKeys + "," : "") + "OriginalCommand", requiredVals);
     }
 
-    @Override
-    protected boolean matches(Message message) {
-        boolean matched = super.matches(message);
-        if(!matched)return matched;
-
-        if(originalCommand != null){
-            return originalCommand.equalsIgnoreCase(message.getString("OriginalCommand"));
-        } else {
-            return matched;
-        }
-    }
 }

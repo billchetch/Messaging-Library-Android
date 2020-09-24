@@ -9,10 +9,11 @@ public abstract class MessageFilter implements IMessageHandler {
     public String Sender;
     private List<MessageType> types = null;
     private List<String> requiredKeys= null;
+    private List<Object> requiredValues = null;
 
     abstract protected void onMatched(Message message);
 
-    public MessageFilter(String sender, MessageType type, String reqKeys)
+    public MessageFilter(String sender, MessageType type, String reqKeys, Object ...requiredVals)
     {
         this.Sender = sender;
         this.types = new ArrayList<MessageType>();
@@ -24,9 +25,13 @@ public abstract class MessageFilter implements IMessageHandler {
                 requiredKeys.add(rk.trim());
             }
         }
+
+        if(requiredVals != null && requiredVals.length > 0 && requiredVals.length == requiredKeys.size()) {
+            requiredValues = Arrays.asList(requiredVals);
+        }
     }
 
-    public MessageFilter(String sender, MessageType[] types, String reqKeys)
+    public MessageFilter(String sender, MessageType[] types, String reqKeys, Object ...requiredVals)
     {
         this.Sender = sender;
         this.types = Arrays.asList(types);
@@ -36,6 +41,10 @@ public abstract class MessageFilter implements IMessageHandler {
             for(String rk : rkeys){
                 requiredKeys.add(rk.trim());
             }
+        }
+
+        if(requiredVals != null && requiredVals.length > 0) {
+            requiredValues = Arrays.asList(requiredVals);
         }
     }
 
@@ -81,6 +90,17 @@ public abstract class MessageFilter implements IMessageHandler {
         {
             for(String k : requiredKeys){
                 if(!message.hasValue(k))return false;
+            }
+        }
+
+        if(requiredValues != null && requiredValues.size() > 0)
+        {
+            for(int i = 0; i < requiredKeys.size(); i++){
+                String k = requiredKeys.get(i);
+                Object v = requiredValues.get(i);
+                Object mv = message.getValue(k);
+
+                if((v == null && mv != null) || (v != null && !v.equals(mv)))return false;
             }
         }
 

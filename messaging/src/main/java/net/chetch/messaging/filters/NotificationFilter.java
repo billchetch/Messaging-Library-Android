@@ -12,4 +12,8 @@ abstract public class NotificationFilter extends MessageFilter {
     public NotificationFilter(String sender){
         this(sender, null);
     }
+
+    public NotificationFilter(String sender, String requiredFields, Object ... requiredValues){
+        super(sender, MessageType.NOTIFICATION, requiredFields, requiredValues);
+    }
 }

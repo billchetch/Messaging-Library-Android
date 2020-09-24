@@ -12,4 +12,8 @@ abstract public class AlertFilter extends MessageFilter {
     public AlertFilter(String sender){
         this(sender, null);
     }
+
+    public AlertFilter(String sender, String requiredFields, Object ... requiredValues){
+        super(sender, MessageType.ALERT, requiredFields, requiredValues);
+    }
 }
