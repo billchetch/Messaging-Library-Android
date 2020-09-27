@@ -37,7 +37,7 @@ public class ClientManager<T extends ClientConnection> {
 
     ConnectionRequest currentRequest = null;
     HashMap<String, ClientConnection> connections = new HashMap<>();
-    HashMap<String, String> reconnect = new HashMap<>();
+    HashMap<String, ClientConnection> reconnect = new HashMap<>();
 
     boolean keepAliveStarted = false;
     Handler keepAliveHandler = new Handler();
@@ -109,7 +109,7 @@ public class ClientManager<T extends ClientConnection> {
         if(cnn != primaryConnection && connections.containsKey(cnn.id)){
             Log.i("CMGR", "removing " + cnn.id + " and adding to reconnect list");
             connections.remove(cnn.id);
-            reconnect.put(cnn.name, cnn.getConnectionString());
+            reconnect.put(cnn.name, cnn);
             stopKeepAlive();
             startKeepAlive(1000);
         }
@@ -132,17 +132,22 @@ public class ClientManager<T extends ClientConnection> {
 
         primaryConnection.open();
 
-        long start = Calendar.getInstance().getTimeInMillis();
-        do{
-            Thread.sleep(250);
-            long elapsed = Calendar.getInstance().getTimeInMillis() - start;
-            if(timeout > 0 && elapsed > timeout){
-                throw new TimeoutException("ClientConection::connect Timeout occurred");
-            }
-        } while(!currentRequest.isFinished());
+        try {
+            long start = Calendar.getInstance().getTimeInMillis();
+            do {
+                Thread.sleep(250);
+                long elapsed = Calendar.getInstance().getTimeInMillis() - start;
+                if (timeout > 0 && elapsed > timeout) {
+                    throw new TimeoutException("ClientConection::connect Timeout occurred");
+                }
+            } while (!currentRequest.isFinished());
 
-        if(currentRequest.failed){
-            throw new Exception("Connection request failed");
+            if (currentRequest.failed) {
+                throw new Exception("Connection request failed");
+            }
+        } catch (Exception e){
+            currentRequest = null;
+            throw e;
         }
 
         ClientConnection cnn = null;
@@ -166,10 +171,12 @@ public class ClientManager<T extends ClientConnection> {
         }
 
         List<String> toRemove = new ArrayList<>();
-        for(Map.Entry<String, String> entry : reconnect.entrySet()){
+        for(Map.Entry<String, ClientConnection> entry : reconnect.entrySet()){
             try {
                 Log.i("CC", "reconnecting " + entry.getKey() + " to " + entry.getValue());
-                connect(entry.getValue(), entry.getKey(), 10000);
+                ClientConnection oldCnn = entry.getValue();
+                ClientConnection newCnn = connect(oldCnn.getConnectionString(), entry.getKey(), 10000);
+                oldCnn.handleReconnect(newCnn);
                 toRemove.add(entry.getKey());
             } catch (Exception e){
                 Log.e("CMGR", "keepAlive: " + e.getMessage());
@@ -180,7 +187,7 @@ public class ClientManager<T extends ClientConnection> {
             reconnect.remove(key);
         }
 
-        return 2*60*1000;
+        return 60*1000;
     }
 
     protected T createPrimaryConnection(String connectionString){

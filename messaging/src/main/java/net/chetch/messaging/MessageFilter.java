@@ -66,11 +66,6 @@ public abstract class MessageFilter implements IMessageHandler {
         }
     }
 
-    @Override
-    public void handleConnectionError(Exception e, ClientConnection cnn) {
-        //empty
-    }
-
     protected boolean matches(Message message)
     {
         boolean matched = true;

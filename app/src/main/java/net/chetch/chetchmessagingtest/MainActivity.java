@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         model = ViewModelProviders.of(this).get(MViewModel.class);
 
-        model.addMessagingService("test");
+        model.addMessagingService("BBAlarms");
         model.loadData(dataLoadProgress);
 
         model.getMessagingService().observe(this, ms->{

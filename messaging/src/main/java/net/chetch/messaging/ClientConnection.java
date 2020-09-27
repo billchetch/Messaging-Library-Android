@@ -51,9 +51,9 @@ abstract public class ClientConnection {
     private int messagesReceived = 0;
     private int garbageReceived = 0;
 
-    private List<IMessageHandler> handlers = new ArrayList<>();
-
-    private List<MessageFilter> subscriptionFilters = new ArrayList<>();
+    private List<IMessageHandler> messageHandlers = new ArrayList<>();
+    private List<IConnectionHandler> connectionHandlers = new ArrayList<>();
+    protected List<String> subscriptions = new ArrayList<>();
 
     abstract public String getConnectionString();
     abstract public void parseConnectionString(String connectionString) throws Exception;
@@ -80,22 +80,76 @@ abstract public class ClientConnection {
         return state == ConnectionState.CONNECTED || state == ConnectionState.RECEIVING || state == ConnectionState.SENDING;
     }
 
-    public void addHandler(IMessageHandler handler){
-        if(!handlers.contains(handler)) {
-            handlers.add(handler);
+    public void addMessageHandler(IMessageHandler handler){
+        if(!messageHandlers.contains(handler)) {
+            messageHandlers.add(handler);
         }
     }
 
-    public void removeHandler(IMessageHandler handler){
-        if(handlers.contains(handler)){
-            handlers.remove(handler);
+    public void removeMessageHandler(IMessageHandler handler){
+        if(messageHandlers.contains(handler)){
+            messageHandlers.remove(handler);
         }
+    }
+
+    public List<IMessageHandler> getMessageHandlersList(){
+        List<net.chetch.messaging.IMessageHandler> temp = new ArrayList<>();
+        for(net.chetch.messaging.IMessageHandler h : messageHandlers){
+            temp.add(h);
+        }
+        return temp;
+    }
+
+    public void addConnectionHandler(IConnectionHandler handler){
+        if(!connectionHandlers.contains(handler)) {
+            connectionHandlers.add(handler);
+        }
+    }
+
+    public void removeConnectionHandler(IConnectionHandler handler){
+        if(connectionHandlers.contains(handler)){
+            connectionHandlers.remove(handler);
+        }
+    }
+
+    public List<IConnectionHandler> getConnectionHandlersList(){
+        List<IConnectionHandler> temp = new ArrayList<>();
+        for(IConnectionHandler h : connectionHandlers){
+            temp.add(h);
+        }
+        return temp;
     }
 
     public void handleConnectionError(Exception e){
         Log.e("CC", id + " exception: " + e.getMessage());
+
+        //we split in to temp to allow for manipulation of handlers list within a particular handler
+        List<IConnectionHandler> temp = getConnectionHandlersList();
+        for(IConnectionHandler h : temp) {
+            h.handleConnectionError(this, e);
+        }
+
         if(mgr != null){
             mgr.handleConnectionError(this, e);
+        }
+    }
+
+    public void handleReconnect(ClientConnection newCnn){
+        List<IConnectionHandler> ctemp = getConnectionHandlersList();
+        for(IConnectionHandler h : ctemp) {
+            h.handleReconnect(this, newCnn);
+            newCnn.addConnectionHandler(h);
+        }
+        List<IMessageHandler> mtemp = getMessageHandlersList();
+        for(IMessageHandler h : mtemp) {
+            newCnn.addMessageHandler(h);
+        }
+        for(String clientName : subscriptions){
+            try {
+                newCnn.subscribe(clientName);
+            } catch (Exception e){
+                Log.e("CC", "Re-subscribint on reconnect gives " + e.getMessage());
+            }
         }
     }
 
@@ -148,6 +202,12 @@ abstract public class ClientConnection {
             Log.e("CC", "ClientConnection::close " + e.getMessage());
         }
         setState(ConnectionState.CLOSED);
+
+        //we split in to temp to allow for manipulation of handlers list within a particular handler
+        List<IConnectionHandler> temp = getConnectionHandlersList();
+        for(IConnectionHandler h : temp) {
+            h.handleConnectionClosed(this);
+        }
     }
 
     protected void onConnected(){
@@ -284,10 +344,7 @@ abstract public class ClientConnection {
 
             default:
                 //we split in to temp to allow for manipulation of handlers list within a particular handler
-                List<IMessageHandler> temp = new ArrayList<>();
-                for(IMessageHandler h : handlers){
-                    temp.add(h);
-                }
+                List<IMessageHandler> temp = getMessageHandlersList();
                 for(IMessageHandler h : temp) {
                     h.handleReceivedMessage(message, this);
                 }
@@ -339,21 +396,20 @@ abstract public class ClientConnection {
         {
             throw new Exception("To subscribe the message filter must have a Sender value");
         }
-        if (!subscriptionFilters.contains(messageFilter))
-        {
-            subscriptionFilters.add(messageFilter);
-        }
 
-        addHandler(messageFilter);
+        addMessageHandler(messageFilter);
         subscribe(messageFilter.Sender);
     }
 
     public void subscribe(String clientName) throws Exception{
         if(clientName == null || clientName.isEmpty())throw new Exception("There must be a client to subsribe to");
+
         Message msg = new Message();
         msg.Type = MessageType.SUBSCRIBE;
         msg.setValue("Subscription request from " + name);
         msg.addValue("Clients", clientName);
         send(msg);
+
+        if(!subscriptions.contains(clientName))subscriptions.add(clientName);
     }
 }

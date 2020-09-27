@@ -22,7 +22,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
-public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler {
+public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler, IConnectionHandler {
     public enum MessagingServiceState{
         UNKNOWN,
         NOT_CONNECTED,
@@ -35,13 +35,12 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         public boolean subscribed = false;
         public String name;
         public MessagingServiceState state;
+        public Calendar firstPingSentOn;
         public Calendar lastMessageReceivedOn;
         public Message lastMessage;
-        public Calendar lastPingSentOn;
-        public Calendar lastPingReceivedOn;
         public Message lastError;
         public Calendar lastErrorReceivedOn;
-        public int maxResponseTime = 10;  //wait this many seconds before declaring the services as non responsive
+        public int maxDormantTime = 30;  //wait this many seconds before declaring the services as non responsive
         public int pingInterval = 15; //wait this many seconds after last message received before pinging the service
 
         public MessagingService(String clientName){
@@ -50,12 +49,12 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
 
         public boolean isResponsive(){
-            if(lastPingSentOn == null){
+            if(lastMessageReceivedOn == null && firstPingSentOn == null){
                 return true;
-            } else {
-                long useTime = lastPingReceivedOn == null  ? Calendar.getInstance().getTimeInMillis() : lastPingReceivedOn.getTimeInMillis();
-                long diff = useTime - lastPingSentOn.getTimeInMillis();
-                return diff > 0 && diff < maxResponseTime * 1000;
+            } else { //so we can assume at least one ping has been sent
+                long useTime = lastMessageReceivedOn == null ? firstPingSentOn.getTimeInMillis() : lastMessageReceivedOn.getTimeInMillis();
+                long diff = Calendar.getInstance().getTimeInMillis() - useTime;
+                return diff < maxDormantTime * 1000;
             }
         }
 
@@ -75,6 +74,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             } else {
                 return false;
             }
+        }
+
+        public void reset(){
+            firstPingSentOn = null;
+            lastMessageReceivedOn = null;
         }
     }
 
@@ -133,7 +137,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             }
         }
 
-        client.addHandler(this);
+        client.addMessageHandler(this);
+        client.addConnectionHandler(this);
 
         for(MessageFilter f : messageFilters) {
             try {
@@ -196,6 +201,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         if(clientName == null || messagingServices.containsKey(clientName))return;
 
         MessagingService ms = new MessagingService(clientName);
+        ms.maxDormantTime = timerDelay + ms.pingInterval;
         messagingServices.put(clientName, ms);
 
         if(client != null && client.isConnected()){
@@ -218,14 +224,14 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         for(MessagingService ms : messagingServices.values()){
             if(ms.state != MessagingServiceState.NOT_CONNECTED && !ms.isResponsive()){
                 if(ms.setState(MessagingServiceState.NOT_RESPONDING)) {
-                    setError(new MessagingServiceException("Service " + ms.name + " is not responding after more than " + ms.maxResponseTime + " seconds"));
+                    setError(new MessagingServiceException("Service " + ms.name + " is not responding after more than " + ms.maxDormantTime + " seconds"));
                     liveDataMessagingService.postValue(ms);
                 }
             }
 
             if(ms.requiresPinging()){
                 getClient().sendPing(ms.name);
-                ms.lastPingSentOn = Calendar.getInstance();
+                if(ms.firstPingSentOn == null)ms.firstPingSentOn = Calendar.getInstance();
                 Log.i("MessagingViewModel", "Pinging " + ms.name);
             }
         }
@@ -257,11 +263,6 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             Calendar now = Calendar.getInstance();
             MessagingServiceState msState = MessagingServiceState.UNKNOWN;
             switch(message.Type){
-                case PING_RESPONSE:
-                    ms.lastPingReceivedOn = now;
-                    msState = MessagingServiceState.RESPONDING;
-                    break;
-
                 case ERROR:
                     ms.lastErrorReceivedOn = now;
                     ms.lastError = message;
@@ -276,6 +277,10 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
                         case ClientManager.NOTIFICATION_CLIENT_DISCONNECTED:
                             msState = MessagingServiceState.NOT_CONNECTED;
+                            break;
+
+                        default:
+                            msState = MessagingServiceState.RESPONDING;
                             break;
                     }
                     break;
@@ -296,7 +301,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         switch(message.Type){
             case SHUTDOWN:
                 for(MessagingService ms : messagingServices.values()) {
-                    ms.setState(MessagingServiceState.NOT_CONNECTED);
+                    if(ms.setState(MessagingServiceState.NOT_CONNECTED))liveDataMessagingService.postValue(ms);
                 }
                 break;
 
@@ -318,8 +323,26 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
 
     @Override
-    public void handleConnectionError(Exception e, ClientConnection cnn) {
+    public void handleConnectionError(ClientConnection cnn, Exception e) {
         setError(e);
+        Log.e("MessagingViewModel", "Connection error: " + e.getMessage());
+    }
+
+    @Override
+    public void handleConnectionClosed(ClientConnection cnn) {
+        stopTimer();
+
+    }
+
+    @Override
+    public void handleReconnect(ClientConnection oldCnn, ClientConnection newCnn) {
+        Log.w("MessagingViewModel", "Reconnecting client");
+        client = newCnn;
+
+        for(MessagingService ms : messagingServices.values()){
+            ms.reset();
+        }
+        startTimer(timerDelay, 1);
     }
 
     @Override
