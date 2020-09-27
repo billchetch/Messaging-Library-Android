@@ -43,9 +43,10 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         public int maxDormantTime = 30;  //wait this many seconds before declaring the services as non responsive
         public int pingInterval = 15; //wait this many seconds after last message received before pinging the service
 
-        public MessagingService(String clientName){
+        public MessagingService(String clientName, int timerDelay){
             name = clientName;
             state = MessagingServiceState.UNKNOWN;
+            maxDormantTime = timerDelay + pingInterval;
         }
 
         public boolean isResponsive(){
@@ -185,7 +186,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public void addMessageFilter(MessageFilter f) throws Exception {
         MessagingService ms = null;
         if(f.Sender != null && !messagingServices.containsKey(f.Sender)){
-            ms = new MessagingService(f.Sender);
+            ms = new MessagingService(f.Sender, timerDelay);
             messagingServices.put(ms.name, ms);
         }
         if(messageFilters.contains(f))return;
@@ -200,8 +201,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public void addMessagingService(String serviceClientName){
         if(serviceClientName == null || messagingServices.containsKey(serviceClientName))return;
 
-        MessagingService ms = new MessagingService(serviceClientName);
-        ms.maxDormantTime = timerDelay + ms.pingInterval;
+        MessagingService ms = new MessagingService(serviceClientName, timerDelay);
         messagingServices.put(serviceClientName, ms);
 
         if(client != null && client.isConnected()){
