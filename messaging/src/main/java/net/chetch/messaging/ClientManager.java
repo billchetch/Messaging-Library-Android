@@ -13,6 +13,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
 
 public class ClientManager<T extends ClientConnection> {
+    static final public int ERROR_CLIENT_NOT_CONNECTED = 1;
+    static final public int NOTIFICATION_CLIENT_CONNECTED = 1;
+    static final public int NOTIFICATION_CLIENT_DISCONNECTED = 2;
 
     public class ConnectionRequest{
         public String id;

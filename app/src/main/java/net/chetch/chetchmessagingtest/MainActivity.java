@@ -64,7 +64,12 @@ public class MainActivity extends AppCompatActivity {
 
         model = ViewModelProviders.of(this).get(MViewModel.class);
 
+        model.addMessagingService("test");
         model.loadData(dataLoadProgress);
+
+        model.getMessagingService().observe(this, ms->{
+            Log.i("Main", ms.name + " has state " + ms.state);
+        });
 
     }
 

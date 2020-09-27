@@ -295,10 +295,15 @@ abstract public class ClientConnection {
         }
     }
 
-    public void sendPing(){
+    public void sendPing(String target){
         Message message = new Message();
         message.Type = MessageType.PING;
+        if(target != null)message.Target = target;
         send(message);
+    }
+
+    public void sendPing(){
+        sendPing(null);
     }
 
     public void requestServerStatus(){
@@ -307,6 +312,7 @@ abstract public class ClientConnection {
         message.Target = serverID;
         send(message);
     }
+
 
     public void sendCommand(String target, String command, Object ...args){
         List<Object> largs = null;
