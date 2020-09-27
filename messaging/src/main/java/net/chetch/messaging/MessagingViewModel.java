@@ -186,7 +186,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         MessagingService ms = null;
         if(f.Sender != null && !messagingServices.containsKey(f.Sender)){
             ms = new MessagingService(f.Sender);
-            messagingServices.put(clientName, ms);
+            messagingServices.put(ms.name, ms);
         }
         if(messageFilters.contains(f))return;
 
@@ -197,16 +197,16 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
     }
 
-    public void addMessagingService(String clientName){
-        if(clientName == null || messagingServices.containsKey(clientName))return;
+    public void addMessagingService(String serviceClientName){
+        if(serviceClientName == null || messagingServices.containsKey(serviceClientName))return;
 
-        MessagingService ms = new MessagingService(clientName);
+        MessagingService ms = new MessagingService(serviceClientName);
         ms.maxDormantTime = timerDelay + ms.pingInterval;
-        messagingServices.put(clientName, ms);
+        messagingServices.put(serviceClientName, ms);
 
         if(client != null && client.isConnected()){
             try {
-                client.subscribe(clientName);
+                client.subscribe(serviceClientName);
                 ms.subscribed = true;
             } catch (Exception e){
                 Log.e("MessagingViewModel", e.getMessage());
