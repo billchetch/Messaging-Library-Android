@@ -3,7 +3,10 @@ package net.chetch.messaging;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import net.chetch.utilities.CalendarTypeAdapater;
+import net.chetch.utilities.DelegateTypeAdapterFactory;
 import net.chetch.utilities.EnumTypeAdapater;
+import net.chetch.utilities.Utils;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -13,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Message{
+    static public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
+
     static Gson gson = null;
     //basic conversions based on expected results after deserialization (such as all numbers becom doubles)
     //or enums are usually their ordinal value but might be their string representation
@@ -140,6 +145,14 @@ public class Message{
         Object value = getValue(key);
         T t = convert(value, cls);
         return t == null ? defaultValue : t;
+    }
+
+    public Calendar getCalendar(String key){
+        try {
+            return Utils.parseDate(getString(key), DEFAULT_DATE_FORMAT);
+        } catch (Exception e){
+            return null;
+        }
     }
 
     public <T> List<T> getList(String key, Class<T> cls){
