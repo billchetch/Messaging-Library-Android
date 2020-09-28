@@ -25,6 +25,7 @@ import androidx.lifecycle.Observer;
 public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler, IConnectionHandler {
     public enum MessagingServiceState{
         UNKNOWN,
+        NOT_FOUND,
         NOT_CONNECTED,
         NOT_RESPONDING,
         RESPONDING,
