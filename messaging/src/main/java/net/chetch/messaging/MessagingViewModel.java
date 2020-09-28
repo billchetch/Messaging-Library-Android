@@ -8,7 +8,10 @@ import net.chetch.messaging.exceptions.MessagingException;
 import net.chetch.messaging.exceptions.MessagingServiceException;
 import net.chetch.utilities.Utils;
 import net.chetch.webservices.DataStore;
+import net.chetch.webservices.WebserviceRepository;
 import net.chetch.webservices.WebserviceViewModel;
+import net.chetch.webservices.exceptions.WebserviceException;
+import net.chetch.webservices.network.NetworkRepository;
 import net.chetch.webservices.network.Service;
 import net.chetch.webservices.network.Services;
 
@@ -257,6 +260,18 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     }
 
     @Override
+    protected void handleRespositoryError(WebserviceRepository<?> repo, Throwable t) {
+        super.handleRespositoryError(repo, t);
+
+        //this means that an as
+        if(t instanceof WebserviceException && !((WebserviceException)t).isServiceAvailable()){
+            for(MessagingService ms : messagingServices.values()){
+                if(ms.setState(MessagingServiceState.NOT_FOUND))liveDataMessagingService.postValue(ms);
+            }
+        }
+    }
+
+    @Override
     public void handleReceivedMessage(Message message, ClientConnection cnn) {
         //handle messages intended for a service first
         if(message.Sender != null && messagingServices.containsKey(message.Sender)) {
@@ -322,7 +337,6 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
     }
 
-
     @Override
     public void handleConnectionError(ClientConnection cnn, Exception e) {
         setError(e);
@@ -332,7 +346,6 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     @Override
     public void handleConnectionClosed(ClientConnection cnn) {
         stopTimer();
-
     }
 
     @Override
