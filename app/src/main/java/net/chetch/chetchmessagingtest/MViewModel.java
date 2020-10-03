@@ -20,7 +20,9 @@ public class MViewModel extends MessagingViewModel {
 
 
     public MViewModel(){
+
         setClientName("RoundhouseBilly");
+        addMessagingService("BBAlarms");
     }
 
     @Override

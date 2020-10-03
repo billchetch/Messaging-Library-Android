@@ -106,6 +106,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     List<MessageFilter> messageFilters = new ArrayList<MessageFilter>();
     Map<String, MessagingService> messagingServices = new HashMap<>(); //Other 'clients' this view model subscribes to via a message filter
     MutableLiveData<MessagingService> liveDataMessagingService = new MutableLiveData<>();
+    boolean pingingServicesPaused = false;
 
 
     //timer stuff
@@ -260,11 +261,20 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     }
 
     public void pausePingServices(){
+        if(pingingServicesPaused)return;
         stopTimer();
+        pingingServicesPaused = true;
+        Log.i("MVM", "Pausing ping services...");
     }
 
     public void resumePingServices(){
+        if(!pingingServicesPaused)return;;
+        for(MessagingService ms : messagingServices.values()){
+            ms.reset();
+        }
         startTimer(timerDelay, 1);
+        pingingServicesPaused = false;
+        Log.i("MVM", "Resuming ping services...");
     }
 
     @Override

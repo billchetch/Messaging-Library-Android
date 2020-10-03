@@ -53,12 +53,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         try {
-            String sz = "{\"ID\":\"4076-46104728-202009282018322236\",\"ResponseID\":null,\"Target\":null,\"Sender\":null,\"Type\":3,\"SubType\":0,\"Signature\":null,\"D\":\"2020-09-28 21:05:09 +08:00\"}";
-            Message msg = Message.deserialize(sz);
 
             //String apiBaseURL = "http://192.168.43.123:8001/api/";
             //String apiBaseURL = "http://192.168.1.100:8001/api/";
-            String apiBaseURL = "http://192.168.0.123:8001/api/";
+            //String apiBaseURL = "http://192.168.0.123:8001/api/";
+            String apiBaseURL = "http://192.168.0.150:8001/api/";
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
         } catch (Exception e) {
             Log.e("MVM", e.getMessage());
@@ -74,6 +73,19 @@ public class MainActivity extends AppCompatActivity {
             Log.i("Main", ms.name + " has state " + ms.state);
         });
 
+    }
+
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        model.pausePingServices();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        model.resumePingServices();
     }
 
     @Override
