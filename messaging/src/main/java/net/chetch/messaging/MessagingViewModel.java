@@ -259,6 +259,14 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         timerStartedOn = null;
     }
 
+    public void pausePingServices(){
+        stopTimer();
+    }
+
+    public void resumePingServices(){
+        startTimer(timerDelay, 1);
+    }
+
     @Override
     protected void handleRespositoryError(WebserviceRepository<?> repo, Throwable t) {
         super.handleRespositoryError(repo, t);
