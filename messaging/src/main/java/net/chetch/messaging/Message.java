@@ -149,7 +149,12 @@ public class Message{
 
     public Calendar getCalendar(String key){
         try {
-            return Utils.parseDate(getString(key), DEFAULT_DATE_FORMAT);
+            String dateString = getString(key);
+            if(dateString == null || dateString.isEmpty() || dateString.indexOf("0001-01-01") != -1){
+                return null;
+            } else {
+                return Utils.parseDate(getString(key), DEFAULT_DATE_FORMAT);
+            }
         } catch (Exception e){
             return null;
         }
