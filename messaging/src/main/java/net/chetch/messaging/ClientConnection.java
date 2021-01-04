@@ -288,11 +288,11 @@ abstract public class ClientConnection {
                 throw new Exception("read returned empty for " + id);
             }
         } catch (IOException e) {
-            Log.e("CC", e.getMessage());
+            //Log.e("CC", e.getMessage());
             throw e;
         }
 
-        Log.i("CC", "Received: " + data);
+        //Log.i("CC", "Received: " + data);
         List<String> splitted = Message.split(data);
         List<Exception> exceptions = new ArrayList<>();
         for (String serialized : splitted){
@@ -307,7 +307,7 @@ abstract public class ClientConnection {
             try {
                 handleReceivedMessage(message);
             } catch (Exception e) {
-                Log.e("CC", e.getMessage());
+                Log.e("CC", e.getMessage() == null ? "no error message" : e.getMessage());
                 exceptions.add(e);
             }
         }

@@ -1,2 +1,5 @@
+include ':app', ':messaging'
 include ':webservices'
-include ':app', ':messaging', ':utilities'
+project(':webservices').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/WebservicesTest/webservices')
+include ':utilities'
+project(':utilities').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/Utils/utilities')
