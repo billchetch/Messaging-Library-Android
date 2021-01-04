@@ -265,7 +265,7 @@ public class ClientManager<T extends ClientConnection> {
 
 
             default:
-                Log.i("CMGR", "Received message " + message.ID);
+                Log.i("CMGR", "Received message " + (message.ID == null ? "NULL ID!" : message.ID));
                 break;
         }
     }

@@ -350,7 +350,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
                 String msg = "ChetchMessaging error: " + (message.hasValue() ? message.getValue().toString() : "no error message available");
                 Log.e("MessagingViewModel", msg);
-                setError(new MessagingException(msg));
+                setError(new MessagingException(msg, message));
                 break;
         }
     }
