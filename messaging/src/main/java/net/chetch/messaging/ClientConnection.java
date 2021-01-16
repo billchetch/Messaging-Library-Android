@@ -11,6 +11,16 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 abstract public class ClientConnection {
+    public static String createSignature(String authToken, String sender) throws Exception{
+        if(authToken == null || authToken.isEmpty())
+        {
+            throw new Exception("Cannot create signature without AuthToken");
+        }
+        if(sender == null || sender.isEmpty()){
+            throw new Exception("Cannot create signature without Sender");
+        }
+        return authToken + "-" + sender;
+    }
 
     public enum ConnectionState
     {
@@ -135,6 +145,8 @@ abstract public class ClientConnection {
     }
 
     public void handleReconnect(ClientConnection newCnn){
+        if(newCnn == this)return;
+
         List<IConnectionHandler> ctemp = getConnectionHandlersList();
         for(IConnectionHandler h : ctemp) {
             h.handleReconnect(this, newCnn);
@@ -221,11 +233,7 @@ abstract public class ClientConnection {
     }
 
     public String createSignature(String sender) throws Exception{
-        if(authToken == null || authToken.isEmpty())
-        {
-            throw new Exception("Cannot creat signature without AuthToken");
-        }
-        return (sender == null ? name : sender) + "-" + authToken;
+        return createSignature(authToken, sender == null ? name : sender);
     }
 
     public void pollMessageQueue() throws Exception{

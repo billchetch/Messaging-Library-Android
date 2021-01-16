@@ -21,8 +21,9 @@ public class MViewModel extends MessagingViewModel {
 
     public MViewModel(){
 
+
         setClientName("RoundhouseBilly");
-        addMessagingService("BBAlarms");
+        //addMessagingService("BBAlarms");
     }
 
     @Override
@@ -30,4 +31,6 @@ public class MViewModel extends MessagingViewModel {
         super.onClientConnected();
 
     }
+
+
 }

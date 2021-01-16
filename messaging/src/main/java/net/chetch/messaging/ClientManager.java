@@ -1,5 +1,6 @@
 package net.chetch.messaging;
 
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.util.Log;
 
@@ -16,6 +17,8 @@ public class ClientManager<T extends ClientConnection> {
     static final public int ERROR_CLIENT_NOT_CONNECTED = 1;
     static final public int NOTIFICATION_CLIENT_CONNECTED = 1;
     static final public int NOTIFICATION_CLIENT_DISCONNECTED = 2;
+
+    static public SharedPreferences tokenStore;
 
     public class ConnectionRequest{
         public String id;
@@ -115,17 +118,31 @@ public class ClientManager<T extends ClientConnection> {
         }
     }
 
-    public ClientConnection connect(String connectionString, String name, int timeout) throws Exception {
+    public ClientConnection connect(String connectionString, String name, int timeout, String authToken) throws Exception {
         //here we create a connection request and
         if(currentRequest != null){
             throw new Exception("There is still an ongoing connection request");
         }
+
+        if(authToken == null && tokenStore != null){ //check if we have an auth token for this connection
+            authToken = tokenStore.getString(name + "-AuthToken", null);
+        }
+
+        //create a request object to keep track of the request
         ConnectionRequest cnnreq = new ConnectionRequest();
         cnnreq.name = name;
+
+        //create the message to send
         Message request = new Message();
         request.Type = MessageType.CONNECTION_REQUEST;
         request.Sender = name;
+        if(authToken != null){
+            request.Signature = ClientConnection.createSignature(authToken, name);
+            Log.i("CMGR", "Connect using auth token " + authToken);
+        }
         cnnreq.request = request;
+
+        //record this as the current request
         currentRequest = cnnreq;
 
         initialisePrimaryConnection(connectionString);
@@ -159,6 +176,11 @@ public class ClientManager<T extends ClientConnection> {
         return cnn;
     }
 
+
+    public ClientConnection connect(String connectionString, String name, int timeout) throws Exception {
+        return connect(connectionString, name, timeout, null);
+    }
+
     protected int keepAlive(){
 
         Log.i("CMGR", "Keep Alive Called!");
@@ -175,7 +197,7 @@ public class ClientManager<T extends ClientConnection> {
             try {
                 Log.i("CC", "reconnecting " + entry.getKey() + " to " + entry.getValue());
                 ClientConnection oldCnn = entry.getValue();
-                ClientConnection newCnn = connect(oldCnn.getConnectionString(), entry.getKey(), 10000);
+                ClientConnection newCnn = connect(oldCnn.getConnectionString(), entry.getKey(), 10000, oldCnn.authToken);
                 oldCnn.handleReconnect(newCnn);
                 toRemove.add(entry.getKey());
             } catch (Exception e){
@@ -187,7 +209,7 @@ public class ClientManager<T extends ClientConnection> {
             reconnect.remove(key);
         }
 
-        return 60*1000;
+        return reconnect.size() > 0 ? 5000 : 10*1000;
     }
 
     protected T createPrimaryConnection(String connectionString){
@@ -249,23 +271,24 @@ public class ClientManager<T extends ClientConnection> {
                 Log.i("CMGR","Received connection request response");
 
                 boolean granted = message.getBoolean("Granted");
-                if(granted){
+                if(granted) {
                     //so we create a new connection and attempt to connect it
-                    ClientConnection newCnn = createConnection(message);
+                    ClientConnection newCnn;
+                    newCnn = createConnection(message);
                     newCnn.name = currentRequest.name;
                     connections.put(newCnn.id, newCnn);
-                    Log.i("CMGR", "Opening new connection");
                     newCnn.open();
+                    Log.i("CMGR", "Opening new connection");
                     currentRequest.connection = newCnn;
                 } else {
-                    Log.i("CMGR","Connection request not granted");
                     currentRequest.failed = true;
+                    Log.i("CMGR","Connection request not granted ... " + (message.hasValue("Declined") ? message.getValue("Declined") : ""));
                 }
                 break;
 
 
             default:
-                Log.i("CMGR", "Received message " + (message.ID == null ? "NULL ID!" : message.ID));
+                Log.i("CMGR", "Received message " + (message.ID == null ? "NULL ID!" : message.ID) + " " + message.Type);
                 break;
         }
     }

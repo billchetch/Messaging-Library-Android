@@ -1,5 +1,7 @@
 package net.chetch.messaging;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.telephony.ServiceState;
 import android.util.Log;
@@ -13,6 +15,7 @@ import net.chetch.webservices.WebserviceViewModel;
 import net.chetch.webservices.exceptions.WebserviceException;
 import net.chetch.webservices.network.NetworkRepository;
 import net.chetch.webservices.network.Service;
+import net.chetch.webservices.network.ServiceToken;
 import net.chetch.webservices.network.Services;
 
 import java.util.ArrayList;
@@ -92,6 +95,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     static ClientConnection client;
     static String clientName = "AndroidCMClient";
     static String connectionString;
+    static Service chetchMessagingService;
+    static ServiceToken serviceToken;
 
     public static boolean isClientConnected(){
         return client != null && client.isConnected();
@@ -135,7 +140,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 if (connectionString == null || connectionString.isEmpty())
                     throw new Exception("connectionString required");
 
-                client = TCPClientManager.connect(connectionString, clientName);
+                client = TCPClientManager.connect(connectionString, clientName, serviceToken.getToken());
+                if(client.authToken != null){
+                    serviceToken.setToken(client.authToken);
+                    networkRepository.saveToken(serviceToken);
+                }
             } catch (Exception e) {
                 Log.e("MessagingViewModel", e.getMessage());
                 setError(e);
@@ -380,13 +389,20 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     @Override
     public DataStore loadData(Observer observer) {
         DataStore<?> dataStore = super.loadData(observer);
-        dataStore.observe(services->{
+        dataStore.observe(services-> {
             Log.i("MessagingViewModel", "Loaded data...");
-            try {
-                connectClient(observer);
-            } catch (Exception e){
-                Log.e("MessagingViewModel", "Client connection error: " + e.getMessage());
-            }
+            notifyLoading(observer, "Services", services);
+
+            //get token for service
+            networkRepository.getToken(chetchMessagingService.getID(), clientName).observe(token->{
+                notifyLoaded(observer, token);
+                serviceToken = token;
+                try {
+                    connectClient(observer);
+                } catch (Exception e){
+                    Log.e("MessagingViewModel", "Client connection error: " + e.getMessage());
+                }
+            });
         });
         return dataStore;
     }
@@ -395,8 +411,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     protected boolean configureServices(Services services) {
         boolean configured = super.configureServices(services);
         if(configured && services.hasService(CHETCH_MESSAGING_SERVICE)){
-            Service cms = services.getService(CHETCH_MESSAGING_SERVICE);
-            setConnectionString(cms.getLanIP() + ":" + cms.getEndpointPort());
+            chetchMessagingService = services.getService(CHETCH_MESSAGING_SERVICE);
+            setConnectionString(chetchMessagingService.getLanIP() + ":" + chetchMessagingService.getEndpointPort());
         }
         return configured;
     }

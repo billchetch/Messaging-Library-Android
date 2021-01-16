@@ -30,6 +30,7 @@ import java.util.Map;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
 
@@ -57,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
             //String apiBaseURL = "http://192.168.43.123:8001/api/";
             //String apiBaseURL = "http://192.168.1.100:8001/api/";
             //String apiBaseURL = "http://192.168.0.123:8001/api/";
-            String apiBaseURL = "http://192.168.0.150:8001/api/";
+            //String apiBaseURL = "http://192.168.0.150:8001/api/";
+            String apiBaseURL = "http://192.168.0.52:8001/api/";
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
         } catch (Exception e) {
             Log.e("MVM", e.getMessage());
@@ -66,7 +68,9 @@ public class MainActivity extends AppCompatActivity {
 
         model = ViewModelProviders.of(this).get(MViewModel.class);
 
-        model.addMessagingService("BBAlarms");
+        model.getError().observe(this, throwable -> {
+            Log.e("Main", throwable.getMessage());
+        });
         model.loadData(dataLoadProgress);
 
         model.getMessagingService().observe(this, ms->{
