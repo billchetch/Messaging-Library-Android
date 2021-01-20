@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
@@ -93,7 +94,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public static final String CHETCH_MESSAGING_SERVICE = "Chetch Messaging";
 
     static ClientConnection client;
-    static String clientName = "AndroidCMClient";
+    static String clientName;
     static String connectionString;
     static Service chetchMessagingService;
     static ServiceToken serviceToken;
@@ -101,8 +102,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public static boolean isClientConnected(){
         return client != null && client.isConnected();
     }
-    static public void setClientName(String clName){
-        clientName = clName;
+    static public void setClientName(Context context, String clName) throws Exception{
+        String[] parts = context.getApplicationContext().getPackageName().split("\\.");
+        String cn = clName + "@" + parts[parts.length - 1];
+        if(cn.length() > 255)throw new Exception("Client name of " + cn + " is too long ... must be less than 255 characters");
+        clientName = cn;
     }
     static public void setConnectionString(String cnnString){
         connectionString = cnnString;
@@ -177,8 +181,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
 
         onClientConnected();
-        notifyObserver(observer, clientName);
-        startTimer(timerDelay, 1);
+        notifyObserver(observer, client);
+        startTimer(1, 1);
         return client;
     }
 
@@ -238,7 +242,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         for(MessagingService ms : messagingServices.values()){
             if(ms.state != MessagingServiceState.NOT_CONNECTED && !ms.isResponsive()){
                 if(ms.setState(MessagingServiceState.NOT_RESPONDING)) {
-                    setError(new MessagingServiceException("Service " + ms.name + " is not responding after more than " + ms.maxDormantTime + " seconds"));
+                    setError(new MessagingServiceException(ms, "Service " + ms.name + " is not responding after more than " + ms.maxDormantTime + " seconds"));
                     liveDataMessagingService.postValue(ms);
                 }
             }
@@ -288,7 +292,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     protected void handleRespositoryError(WebserviceRepository<?> repo, Throwable t) {
-        super.handleRespositoryError(repo, t);
+        super.handleRespositoryError(repo, t); //this will call setError
 
         //this means that an as
         if(t instanceof WebserviceException && !((WebserviceException)t).isServiceAvailable()){
@@ -353,7 +357,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     String service = message.getString("IntendedTarget");
                     if(messagingServices.containsKey(service)){
                         MessagingService ms = messagingServices.get(service);
-                        if(ms.setState(MessagingServiceState.NOT_CONNECTED))liveDataMessagingService.postValue(ms);
+                        if(ms.setState(MessagingServiceState.NOT_CONNECTED)){
+                            liveDataMessagingService.postValue(ms);
+                            setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
+                            return;
+                        }
                     }
                 }
 
@@ -386,8 +394,19 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         startTimer(timerDelay, 1);
     }
 
+    public DataStore loadDataForClient(Context context, String clientName, Observer observer) throws Exception{
+        setClientName(context, clientName);
+        return loadData(observer);
+    }
+
     @Override
-    public DataStore loadData(Observer observer) {
+    public DataStore loadData(Observer observer) throws Exception {
+        //check we have a client
+        if(clientName == null){
+            throw new Exception("Client must have a name");
+        }
+
+        Log.i("MessagingViewModel", "Loading data for client " + clientName);
         DataStore<?> dataStore = super.loadData(observer);
         dataStore.observe(services-> {
             Log.i("MessagingViewModel", "Loaded data...");
@@ -417,8 +436,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         return configured;
     }
 
-    public LiveData<MessagingService> getMessagingService(){
-        return liveDataMessagingService;
+    public void observeMessagingServices(LifecycleOwner owner, Observer<? super MessagingService> observer){
+        liveDataMessagingService.observe(owner, observer);
     }
 }
 

@@ -11,6 +11,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import net.chetch.appframework.GenericActivity;
 import net.chetch.messaging.ClientConnection;
 import net.chetch.messaging.IMessageHandler;
 import net.chetch.messaging.Message;
@@ -19,6 +20,8 @@ import net.chetch.messaging.MessageService;
 import net.chetch.messaging.MessageType;
 import net.chetch.messaging.MessagingViewModel;
 import net.chetch.messaging.TCPClientManager;
+import net.chetch.messaging.exceptions.MessagingException;
+import net.chetch.messaging.exceptions.MessagingServiceException;
 import net.chetch.messaging.filters.AlertFilter;
 import net.chetch.messaging.filters.CommandResponseFilter;
 import net.chetch.webservices.WebserviceViewModel;
@@ -34,17 +37,34 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends GenericActivity {
+
+    enum ConnectState{
+        NOT_SET,
+        CONNECT_REQUEST,
+        CONNECTING,
+        CONNECTED,
+        RECONNECT_REQUEST,
+        ERROR
+    }
 
     Button btnStart, btnSend;
     TextView textStatus;
     MViewModel model;
     Map<String, BBAlarmsMessageSchema.AlarmState> alarmStates = new HashMap<>();
+    ConnectState connectState = ConnectState.NOT_SET;
 
     Observer dataLoadProgress  = obj -> {
-        WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress) obj;
-        String state = progress.startedLoading ? "Loading" : "Loaded";
-        String progressInfo = state + (progress.info == null ? "" : " " + progress.info.toLowerCase());
+        String progressInfo;
+        String state;
+        if(obj instanceof ClientConnection){
+            ClientConnection cnn = (ClientConnection)obj;
+            progressInfo = "Client " + cnn.getName() + " connected";
+        } else {
+            WebserviceViewModel.LoadProgress progress = (WebserviceViewModel.LoadProgress) obj;
+            state = progress.startedLoading ? "Loading" : "Loaded";
+            progressInfo = state + (progress.info == null ? "" : " " + progress.info.toLowerCase());
+        }
         Log.i("Main", progressInfo);
     };
 
@@ -69,16 +89,54 @@ public class MainActivity extends AppCompatActivity {
         model = ViewModelProviders.of(this).get(MViewModel.class);
 
         model.getError().observe(this, throwable -> {
-            Log.e("Main", throwable.getMessage());
+            handleModelErrors(throwable);
         });
-        model.loadData(dataLoadProgress);
 
-        model.getMessagingService().observe(this, ms->{
+        //observe state
+        model.observeMessagingServices(this, ms->{
             Log.i("Main", ms.name + " has state " + ms.state);
         });
 
+        model.addMessagingService("BBAlarms");
+
+        connectState = ConnectState.CONNECT_REQUEST;
+        startTimer(1, 1);
     }
 
+
+    @Override
+    protected int onTimer() {
+        switch(connectState){
+            case CONNECT_REQUEST:
+            case RECONNECT_REQUEST:
+                stopTimer();
+                try {
+                    Log.i("Main", "Attempting to connect it all...");
+                    connectState = ConnectState.CONNECTING;
+                    model.loadDataForClient(this, "Roundhousebilly", dataLoadProgress);
+
+                    connectState = ConnectState.CONNECTED;
+                } catch (Exception e){
+                    connectState = ConnectState.ERROR;
+                    Log.e("Main", e.getMessage());
+                } finally {
+                    startTimer(1);
+                }
+                break;
+
+            case ERROR:
+                connectState = connectState == ConnectState.CONNECTED ? ConnectState.RECONNECT_REQUEST : ConnectState.CONNECT_REQUEST;
+                break;
+        }
+
+        return super.onTimer();
+    }
+
+    private void handleModelErrors(Throwable t){
+        connectState = ConnectState.ERROR;
+
+        Log.e("MODEL ERROR >>>>>>> ", t.getMessage());
+    }
 
     @Override
     protected void onStop() {

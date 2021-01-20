@@ -124,6 +124,17 @@ public class ClientManager<T extends ClientConnection> {
             throw new Exception("There is still an ongoing connection request");
         }
 
+        //check if there is already a connection with that name ... if it's good to go then just return it otherwise barf
+        ClientConnection cnn = getConnection(name);
+        if(cnn != null){
+            if(cnn.isConnected()){
+                startKeepAlive(10000);
+                return cnn;
+            } else {
+                throw new Exception("There is already an existing connection of state " + cnn.getState());
+            }
+        }
+
         if(authToken == null && tokenStore != null){ //check if we have an auth token for this connection
             authToken = tokenStore.getString(name + "-AuthToken", null);
         }
@@ -167,7 +178,7 @@ public class ClientManager<T extends ClientConnection> {
             throw e;
         }
 
-        ClientConnection cnn = null;
+        cnn = null;
         if(currentRequest.succeeded){
             cnn = currentRequest.connection;
         }

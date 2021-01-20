@@ -74,6 +74,8 @@ abstract public class ClientConnection {
         //empty
     }
 
+    public String getName(){ return name; }
+
     protected void setState(ConnectionState newState){
         if(newState != state){
             state = newState;
@@ -84,6 +86,10 @@ abstract public class ClientConnection {
                     break;
             }
         }
+    }
+
+    public ConnectionState getState(){
+        return state;
     }
 
     public boolean isConnected(){
