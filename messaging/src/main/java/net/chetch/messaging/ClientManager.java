@@ -172,7 +172,7 @@ public class ClientManager<T extends ClientConnection> {
             } while (!currentRequest.isFinished());
 
             if (currentRequest.failed) {
-                throw new Exception("Connection request failed");
+                throw new Exception("Connection request failed " + currentRequest.reason4failure);
             }
         } catch (Exception e){
             currentRequest = null;
