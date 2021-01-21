@@ -23,6 +23,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
@@ -93,30 +94,17 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     public static final String CHETCH_MESSAGING_SERVICE = "Chetch Messaging";
 
-    static ClientConnection client;
-    static String clientName;
-    static String connectionString;
-    static Service chetchMessagingService;
-    static ServiceToken serviceToken;
-
-    public static boolean isClientConnected(){
-        return client != null && client.isConnected();
-    }
-    static public void setClientName(Context context, String clName) throws Exception{
-        String[] parts = context.getApplicationContext().getPackageName().split("\\.");
-        String cn = clName + "@" + parts[parts.length - 1];
-        if(cn.length() > 255)throw new Exception("Client name of " + cn + " is too long ... must be less than 255 characters");
-        clientName = cn;
-    }
-    static public void setConnectionString(String cnnString){
-        connectionString = cnnString;
-    }
+    ClientConnection client;
+    String clientName;
+    String uuid;
+    String connectionString;
+    Service chetchMessagingService;
+    ServiceToken serviceToken;
 
     List<MessageFilter> messageFilters = new ArrayList<MessageFilter>();
     Map<String, MessagingService> messagingServices = new HashMap<>(); //Other 'clients' this view model subscribes to via a message filter
     MutableLiveData<MessagingService> liveDataMessagingService = new MutableLiveData<>();
     boolean pingingServicesPaused = false;
-
 
     //timer stuff
     protected int timerDelay = 30;
@@ -134,6 +122,26 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     public MessagingViewModel(){
         //empty
+    }
+
+    public boolean isClientConnected(){
+        return client != null && client.isConnected();
+    }
+
+    public void setClientName(String clName) throws Exception{
+        String cn = clName + ":" + UUID.nameUUIDFromBytes(clName.getBytes()).toString();
+        if (cn.length() > 255)
+            throw new Exception("Client name of " + cn + " is too long ... must be less than 255 characters");
+
+        clientName = cn;
+    }
+
+    public String getClientName(){
+        return clientName;
+    }
+
+    public void setConnectionString(String cnnString){
+        connectionString = cnnString;
     }
 
     public ClientConnection connectClient(Observer observer) {
@@ -182,7 +190,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
         onClientConnected();
         notifyObserver(observer, client);
-        startTimer(1, 1);
+        startTimer(5, 1);
         return client;
     }
 
@@ -341,6 +349,9 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
             if(ms.setState(msState)){
                 liveDataMessagingService.postValue(ms);
+                if(msState == MessagingServiceState.NOT_CONNECTED) {
+                    setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
+                }
             }
         } //end test for message from a service
 
@@ -394,8 +405,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         startTimer(timerDelay, 1);
     }
 
-    public DataStore loadDataForClient(Context context, String clientName, Observer observer) throws Exception{
-        setClientName(context, clientName);
+    public DataStore loadDataForClient(String clientName, Observer observer) throws Exception{
+        setClientName(clientName);
         return loadData(observer);
     }
 
@@ -438,6 +449,23 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     public void observeMessagingServices(LifecycleOwner owner, Observer<? super MessagingService> observer){
         liveDataMessagingService.observe(owner, observer);
+    }
+
+    @Override
+    public boolean isReady() {
+        return super.isReady() && isClientConnected();
+    }
+
+    @Override
+    public void pause() {
+        pausePingServices();
+        super.pause();
+    }
+
+    @Override
+    public void resume() {
+        resumePingServices();
+        super.resume();
     }
 }
 

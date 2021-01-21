@@ -27,6 +27,7 @@ public class ClientManager<T extends ClientConnection> {
         public boolean requested = false;
         public boolean succeeded = false;
         public boolean failed = false;
+        public String reason4failure;
         public ClientConnection connection;
 
         public boolean isFinished(){
@@ -293,7 +294,8 @@ public class ClientManager<T extends ClientConnection> {
                     currentRequest.connection = newCnn;
                 } else {
                     currentRequest.failed = true;
-                    Log.i("CMGR","Connection request not granted ... " + (message.hasValue("Declined") ? message.getValue("Declined") : ""));
+                    currentRequest.reason4failure = "Connection request declined ... " + (message.hasValue("Declined") ? message.getValue("Declined") : "Server did not provide a reason");
+                    Log.i("CMGR",currentRequest.reason4failure);
                 }
                 break;
 
