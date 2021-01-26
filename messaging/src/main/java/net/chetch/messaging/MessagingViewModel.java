@@ -190,7 +190,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
         onClientConnected();
         notifyObserver(observer, client);
-        startTimer(5, 1);
+        startTimer(2, 1);
         return client;
     }
 
