@@ -3,6 +3,8 @@ package net.chetch.messaging;
 import android.net.ParseException;
 import android.util.Log;
 
+import net.chetch.utilities.SLog;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -50,14 +52,14 @@ public class TCPClient extends ClientConnection {
             try {
                 socket.close();
             } catch(Exception e){
-                Log.e("TCPClient", e.getMessage());
+                if(SLog.LOG) SLog.e("TCPClient", e.getMessage());
             }
         }
     }
 
     @Override
     public void connect() throws Exception {
-        Log.i("TCPClient", id + " connecting...");
+        if(SLog.LOG)SLog.i("TCPClient", id + " connecting...");
 
         SocketAddress sockaddr = new InetSocketAddress(ip, port);
         socket = new Socket();
@@ -70,7 +72,7 @@ public class TCPClient extends ClientConnection {
         if (!socket.isConnected()) {
             throw new Exception("Socket not friken connected");
         }
-        Log.i("TCPClient", id + " connected");
+        if(SLog.LOG)SLog.i("TCPClient", id + " connected");
 
         //get the needed input and output streams
         inputStream = socket.getInputStream();
@@ -81,13 +83,13 @@ public class TCPClient extends ClientConnection {
 
         //now hang in until message received or timeout occurred
         do {
-            Log.i("TCPClient", id + " waiting to receive...");
+            if(SLog.LOG)SLog.i("TCPClient", id + " waiting to receive...");
             receiveMessage();
             if(!socket.isConnected()){
                 throw new Exception("Socket disconnected");
             }
         } while(remainConnected);
 
-        Log.i("TCPClient", id + " finished.");
+        if(SLog.LOG)SLog.i("TCPClient", id + " finished.");
     }
 }

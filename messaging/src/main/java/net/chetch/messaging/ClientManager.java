@@ -4,6 +4,8 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.util.Log;
 
+import net.chetch.utilities.SLog;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -103,15 +105,15 @@ public class ClientManager<T extends ClientConnection> {
     }
 
     public void handleConnectionError(ClientConnection cnn, Exception e){
-        Log.e("CMGR", "handleConnectionError: " + e.getMessage());
+        if(SLog.LOG) SLog.e("CMGR", "handleConnectionError: " + e.getMessage());
 
         if(cnn == primaryConnection && currentRequest != null){
             currentRequest.failed = true;
-            Log.i("CMGR", "Setting current request as failed");
+            if(SLog.LOG)SLog.i("CMGR", "Setting current request as failed");
         }
 
         if(cnn != primaryConnection && connections.containsKey(cnn.id)){
-            Log.i("CMGR", "removing " + cnn.id + " and adding to reconnect list");
+            if(SLog.LOG)SLog.i("CMGR", "removing " + cnn.id + " and adding to reconnect list");
             connections.remove(cnn.id);
             reconnect.put(cnn.name, cnn);
             stopKeepAlive();
@@ -150,7 +152,7 @@ public class ClientManager<T extends ClientConnection> {
         request.Sender = name;
         if(authToken != null){
             request.Signature = ClientConnection.createSignature(authToken, name);
-            Log.i("CMGR", "Connect using auth token " + authToken);
+            if(SLog.LOG)SLog.i("CMGR", "Connect using auth token " + authToken);
         }
         cnnreq.request = request;
 
@@ -195,7 +197,7 @@ public class ClientManager<T extends ClientConnection> {
 
     protected int keepAlive(){
 
-        Log.i("CMGR", "Keep Alive Called!");
+        if(SLog.LOG)SLog.i("CMGR", "Keep Alive Called!");
 
         for(Map.Entry<String, ClientConnection> entry : connections.entrySet()){
             ClientConnection cnn = entry.getValue();
@@ -207,13 +209,13 @@ public class ClientManager<T extends ClientConnection> {
         List<String> toRemove = new ArrayList<>();
         for(Map.Entry<String, ClientConnection> entry : reconnect.entrySet()){
             try {
-                Log.i("CC", "reconnecting " + entry.getKey() + " to " + entry.getValue());
+                if(SLog.LOG)SLog.i("CC", "reconnecting " + entry.getKey() + " to " + entry.getValue());
                 ClientConnection oldCnn = entry.getValue();
                 ClientConnection newCnn = connect(oldCnn.getConnectionString(), entry.getKey(), 10000, oldCnn.authToken);
                 oldCnn.handleReconnect(newCnn);
                 toRemove.add(entry.getKey());
             } catch (Exception e){
-                Log.e("CMGR", "keepAlive: " + e.getMessage());
+                if(SLog.LOG)SLog.e("CMGR", "keepAlive: " + e.getMessage());
             }
         }
 
@@ -260,11 +262,11 @@ public class ClientManager<T extends ClientConnection> {
 
     protected void onConnectionConnected(ClientConnection cnn){
         if(cnn == primaryConnection){
-            Log.i("CMGR","Sending connection reqeust");
+            if(SLog.LOG)SLog.i("CMGR","Sending connection reqeust");
             cnn.send(currentRequest.request);
         } else {
             if(cnn == currentRequest.connection){
-                Log.i("CMGR", "Connection request succeeded");
+                if(SLog.LOG)SLog.i("CMGR", "Connection request succeeded");
                 currentRequest.succeeded = true;
             }
         }
@@ -275,12 +277,12 @@ public class ClientManager<T extends ClientConnection> {
             case CONNECTION_REQUEST_RESPONSE:
                 if(cnn != primaryConnection){
                     //throw  exception...?
-                    Log.e("ClientManager", "Cannot process connection requests other than on primary connection");
+                    if(SLog.LOG)SLog.e("ClientManager", "Cannot process connection requests other than on primary connection");
                     return;
                 }
                 currentRequest.requested = true;
 
-                Log.i("CMGR","Received connection request response");
+                if(SLog.LOG)SLog.i("CMGR","Received connection request response");
 
                 boolean granted = message.getBoolean("Granted");
                 if(granted) {
@@ -290,18 +292,18 @@ public class ClientManager<T extends ClientConnection> {
                     newCnn.name = currentRequest.name;
                     connections.put(newCnn.id, newCnn);
                     newCnn.open();
-                    Log.i("CMGR", "Opening new connection");
+                    if(SLog.LOG)SLog.i("CMGR", "Opening new connection");
                     currentRequest.connection = newCnn;
                 } else {
                     currentRequest.failed = true;
                     currentRequest.reason4failure = "Connection request declined ... " + (message.hasValue("Declined") ? message.getValue("Declined") : "Server did not provide a reason");
-                    Log.i("CMGR",currentRequest.reason4failure);
+                    if(SLog.LOG)SLog.i("CMGR",currentRequest.reason4failure);
                 }
                 break;
 
 
             default:
-                Log.i("CMGR", "Received message " + (message.ID == null ? "NULL ID!" : message.ID) + " " + message.Type);
+                if(SLog.LOG)SLog.i("CMGR", "Received message " + (message.ID == null ? "NULL ID!" : message.ID) + " " + message.Type);
                 break;
         }
     }

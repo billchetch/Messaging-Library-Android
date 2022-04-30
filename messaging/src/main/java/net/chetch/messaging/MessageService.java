@@ -8,6 +8,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import net.chetch.utilities.SLog;
+
 public class MessageService extends Service {
     public class MessageServiceBinder extends Binder {
         public MessageService getService(){
@@ -57,12 +59,12 @@ public class MessageService extends Service {
 
         cmgr = new TCPClientManager();
 
-        Log.i("MS", "Service created");
+        if(SLog.LOG)SLog.i("MS", "Service created");
     }
 
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-        Log.i("MS", "Service start called #" + this.hashCode());
+        if(SLog.LOG)SLog.i("MS", "Service start called #" + this.hashCode());
 
 
         return START_STICKY;
@@ -73,21 +75,21 @@ public class MessageService extends Service {
         if(connectionString == null || connectionString.isEmpty() || clientName == null || clientName.isEmpty()){
             throw new IllegalArgumentException("Must pass a connection string and client name");
         }
-        Log.i("MS", "Attempting to create and connect " + clientName + " to " + connectionString);
+        if(SLog.LOG)SLog.i("MS", "Attempting to create and connect " + clientName + " to " + connectionString);
         client = cmgr.connect(connectionString, clientName, 10000);
-        Log.i("MS", clientName + " connected to " + connectionString);
+        if(SLog.LOG)SLog.i("MS", clientName + " connected to " + connectionString);
     }
 
 
     @Override
     public IBinder onBind(Intent intent) {
-        Log.i("MS", "onBind called");
+        if(SLog.LOG)SLog.i("MS", "onBind called");
         return serviceBinder;
     }
 
     @Override
     public void onDestroy() {
-        Log.i("MS", "Service destroyed");
+        if(SLog.LOG)SLog.i("MS", "Service destroyed");
     }
 
     public String getStatus(){

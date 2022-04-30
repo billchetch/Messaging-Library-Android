@@ -8,6 +8,7 @@ import android.util.Log;
 
 import net.chetch.messaging.exceptions.MessagingException;
 import net.chetch.messaging.exceptions.MessagingServiceException;
+import net.chetch.utilities.SLog;
 import net.chetch.utilities.Utils;
 import net.chetch.webservices.DataStore;
 import net.chetch.webservices.WebserviceRepository;
@@ -158,7 +159,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     networkRepository.saveToken(serviceToken);
                 }
             } catch (Exception e) {
-                Log.e("MessagingViewModel", e.getMessage());
+                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
                 setError(e);
                 return null;
             }
@@ -171,7 +172,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             try {
                 client.subscribe(f);
             } catch (Exception e){
-                Log.e("MessagingViewModel", e.getMessage());
+                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
                 setError(e);
             }
         }
@@ -183,7 +184,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     ms.subscribed = true;
                 }
             } catch (Exception e){
-                Log.e("MessagingViewModel", e.getMessage());
+                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
                 setError(e);
             }
         }
@@ -202,7 +203,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             try {
                 client.close();
             } catch (Exception e){
-                Log.e("MessagingViewModel", "finalize: " + e.getMessage());
+                if(SLog.LOG)SLog.e("MessagingViewModel", "finalize: " + e.getMessage());
             }
         }
     }
@@ -235,7 +236,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 client.subscribe(serviceClientName);
                 ms.subscribed = true;
             } catch (Exception e){
-                Log.e("MessagingViewModel", e.getMessage());
+                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
             }
         }
     }
@@ -258,7 +259,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             if(ms.requiresPinging()){
                 getClient().sendPing(ms.name);
                 if(ms.firstPingSentOn == null)ms.firstPingSentOn = Calendar.getInstance();
-                Log.i("MessagingViewModel", "Pinging " + ms.name);
+                if(SLog.LOG)SLog.i("MessagingViewModel", "Pinging " + ms.name);
             }
         }
         return timerDelay;
@@ -285,7 +286,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         if(pingingServicesPaused)return;
         stopTimer();
         pingingServicesPaused = true;
-        Log.i("MVM", "Pausing ping services...");
+        if(SLog.LOG)SLog.i("MVM", "Pausing ping services...");
     }
 
     public void resumePingServices(){
@@ -295,7 +296,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
         startTimer(timerDelay, 1);
         pingingServicesPaused = false;
-        Log.i("MVM", "Resuming ping services...");
+        if(SLog.LOG)SLog.i("MVM", "Resuming ping services...");
     }
 
     @Override
@@ -377,7 +378,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 }
 
                 String msg = "ChetchMessaging error: " + (message.hasValue() ? message.getValue().toString() : "no error message available");
-                Log.e("MessagingViewModel", msg);
+                if(SLog.LOG)SLog.e("MessagingViewModel", msg);
                 setError(new MessagingException(msg, message));
                 break;
         }
@@ -386,7 +387,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     @Override
     public void handleConnectionError(ClientConnection cnn, Exception e) {
         setError(e);
-        Log.e("MessagingViewModel", "Connection error: " + e.getMessage());
+        if(SLog.LOG)SLog.e("MessagingViewModel", "Connection error: " + e.getMessage());
     }
 
     @Override
@@ -396,7 +397,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     public void handleReconnect(ClientConnection oldCnn, ClientConnection newCnn) {
-        Log.w("MessagingViewModel", "Reconnecting client");
+        if(SLog.LOG)SLog.w("MessagingViewModel", "Reconnecting client");
         client = newCnn;
 
         for(MessagingService ms : messagingServices.values()){
@@ -417,10 +418,10 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             throw new Exception("Client must have a name");
         }
 
-        Log.i("MessagingViewModel", "Loading data for client " + clientName);
+        if(SLog.LOG)SLog.i("MessagingViewModel", "Loading data for client " + clientName);
         DataStore<?> dataStore = super.loadData(observer);
         dataStore.observe(services-> {
-            Log.i("MessagingViewModel", "Loaded data...");
+            if(SLog.LOG)SLog.i("MessagingViewModel", "Loaded data...");
             notifyLoading(observer, "Services", services);
 
             //get token for service
@@ -430,7 +431,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 try {
                     connectClient(observer);
                 } catch (Exception e){
-                    Log.e("MessagingViewModel", "Client connection error: " + e.getMessage());
+                    if(SLog.LOG)SLog.e("MessagingViewModel", "Client connection error: " + e.getMessage());
                 }
             });
         });
@@ -453,6 +454,12 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     public boolean isReady() {
+        for(MessagingService ms : messagingServices.values()) {
+            if (ms.state != MessagingServiceState.RESPONDING || !ms.isResponsive()) {
+                return false;
+            }
+        }
+
         return super.isReady() && isClientConnected();
     }
 

@@ -2,6 +2,8 @@ package net.chetch.messaging;
 
 import android.util.Log;
 
+import net.chetch.utilities.SLog;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -137,7 +139,7 @@ abstract public class ClientConnection {
     }
 
     public void handleConnectionError(Exception e){
-        Log.e("CC", id + " exception: " + e.getMessage());
+        if(SLog.LOG) SLog.e("CC", id + " exception: " + e.getMessage());
 
         //we split in to temp to allow for manipulation of handlers list within a particular handler
         List<IConnectionHandler> temp = getConnectionHandlersList();
@@ -166,7 +168,7 @@ abstract public class ClientConnection {
             try {
                 newCnn.subscribe(clientName);
             } catch (Exception e){
-                Log.e("CC", "Re-subscribint on reconnect gives " + e.getMessage());
+                if(SLog.LOG)SLog.e("CC", "Re-subscribint on reconnect gives " + e.getMessage());
             }
         }
     }
@@ -212,12 +214,12 @@ abstract public class ClientConnection {
 
     public void close(){
         setState(ConnectionState.CLOSING);
-        Log.i("ClientConnection", "Closing");
+        if(SLog.LOG)SLog.i("ClientConnection", "Closing");
         try {
             if(inputStream != null)inputStream.close();
             if(outputStream != null)outputStream.close();
         } catch (Exception e){
-            Log.e("CC", "ClientConnection::close " + e.getMessage());
+            if(SLog.LOG)SLog.e("CC", "ClientConnection::close " + e.getMessage());
         }
         setState(ConnectionState.CLOSED);
 
@@ -243,16 +245,16 @@ abstract public class ClientConnection {
     }
 
     public void pollMessageQueue() throws Exception{
-        Log.i("CC", id + " starting poll messages");
+        if(SLog.LOG)SLog.i("CC", id + " starting poll messages");
         do{
             if(isConnected() && messageQueue.size() > 0){
                 Message message = messageQueue.poll();
-                Log.i("CC", id + " poll sending message: " + message.toString());
+                if(SLog.LOG)SLog.i("CC", id + " poll sending message: " + message.toString());
                 sendMessage(message);
             }
             Thread.sleep(200);
         } while(state != ConnectionState.CLOSING && state != ConnectionState.NOT_SET.CLOSED);
-        Log.i("CC", id + " exiting poll messages");
+        if(SLog.LOG)SLog.i("CC", id + " exiting poll messages");
     }
 
     //use this method for general sending
@@ -302,11 +304,11 @@ abstract public class ClientConnection {
                 throw new Exception("read returned empty for " + id);
             }
         } catch (IOException e) {
-            //Log.e("CC", e.getMessage());
+            //if(SLog.LOG)SLog.e("CC", e.getMessage());
             throw e;
         }
 
-        //Log.i("CC", "Received: " + data);
+        //if(SLog.LOG)SLog.i("CC", "Received: " + data);
         List<String> splitted = Message.split(data);
         List<Exception> exceptions = new ArrayList<>();
         for (String serialized : splitted){
@@ -321,7 +323,7 @@ abstract public class ClientConnection {
             try {
                 handleReceivedMessage(message);
             } catch (Exception e) {
-                Log.e("CC", e.getMessage() == null ? "no error message" : e.getMessage());
+                if(SLog.LOG)SLog.e("CC", e.getMessage() == null ? "no error message" : e.getMessage());
                 exceptions.add(e);
             }
         }
@@ -346,7 +348,7 @@ abstract public class ClientConnection {
                 response.addValue("GarbageReceived", garbageReceived);
                 response.addValue("State", state);
                 response.addValue("MessageEncoding", "JSON");
-                Log.i("CC", id + " responding to STATUS_REQUEST");
+                if(SLog.LOG)SLog.i("CC", id + " responding to STATUS_REQUEST");
 
                 send(response);
                 break;
