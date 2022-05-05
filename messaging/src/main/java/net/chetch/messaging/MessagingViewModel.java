@@ -241,6 +241,12 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
     }
 
+    public MessagingService getMessaingService(String serviceClientName){
+        if(serviceClientName == null || !messagingServices.containsKey(serviceClientName))return null;
+
+        return messagingServices.get(serviceClientName);
+    }
+
     protected void onClientConnected(){
         //a hook
     }

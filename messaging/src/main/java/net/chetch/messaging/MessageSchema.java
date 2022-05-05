@@ -1,6 +1,8 @@
 package net.chetch.messaging;
 
 public class MessageSchema {
+    static public final String COMMAND_HELP = "help";
+
     static public Message createResponse(Message message){
         Message response = new Message();
         MessageType responseType = MessageType.NOT_SET;
