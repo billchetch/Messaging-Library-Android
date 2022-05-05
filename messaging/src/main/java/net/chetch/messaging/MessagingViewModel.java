@@ -399,6 +399,9 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     @Override
     public void handleConnectionClosed(ClientConnection cnn) {
         stopTimer();
+        for(MessagingService ms : messagingServices.values()) {
+            if(ms.setState(MessagingServiceState.NOT_CONNECTED))liveDataMessagingService.postValue(ms);
+        }
     }
 
     @Override

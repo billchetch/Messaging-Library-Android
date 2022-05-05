@@ -358,6 +358,10 @@ abstract public class ClientConnection {
                 send(response);
                 break;
 
+            case SHUTDOWN:
+                close();
+                break;
+
             default:
                 //we split in to temp to allow for manipulation of handlers list within a particular handler
                 List<IMessageHandler> temp = getMessageHandlersList();
