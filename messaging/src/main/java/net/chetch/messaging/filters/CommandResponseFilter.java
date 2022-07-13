@@ -6,6 +6,10 @@ import net.chetch.messaging.MessageType;
 
 abstract public class CommandResponseFilter extends MessageFilter {
 
+    public CommandResponseFilter(String sender) {
+        super(sender, MessageType.COMMAND_RESPONSE, "OriginalCommand");
+    }
+
     public CommandResponseFilter(String sender, String originalCommand) {
         super(sender, MessageType.COMMAND_RESPONSE, "OriginalCommand", originalCommand);
     }
