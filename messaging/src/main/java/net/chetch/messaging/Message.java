@@ -148,12 +148,17 @@ public class Message{
     }
 
     public Calendar getCalendar(String key){
+        return getCalendar(key, null);
+    }
+
+    public Calendar getCalendar(String key, String dateFormat){
         try {
             String dateString = getString(key);
             if(dateString == null || dateString.isEmpty() || dateString.indexOf("0001-01-01") != -1){
                 return null;
             } else {
-                return Utils.parseDate(getString(key), DEFAULT_DATE_FORMAT);
+                if(dateFormat == null)dateFormat = DEFAULT_DATE_FORMAT;
+                return Utils.parseDate(getString(key), dateFormat);
             }
         } catch (Exception e){
             return null;
