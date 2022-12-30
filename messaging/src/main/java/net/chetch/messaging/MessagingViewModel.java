@@ -130,7 +130,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     }
 
     public void setClientName(String clName) throws Exception{
-        String cn = clName + ":" + UUID.nameUUIDFromBytes(clName.getBytes()).toString();
+        String cn = clName + "-" + UUID.nameUUIDFromBytes(clName.getBytes()).toString();
         if (cn.length() > 255)
             throw new Exception("Client name of " + cn + " is too long ... must be less than 255 characters");
 
