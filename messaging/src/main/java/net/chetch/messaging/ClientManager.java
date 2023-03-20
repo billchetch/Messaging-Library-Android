@@ -46,6 +46,8 @@ public class ClientManager<T extends ClientConnection> {
     HashMap<String, ClientConnection> reconnect = new HashMap<>();
 
     boolean keepAliveStarted = false;
+    boolean keepAlivePaused = false;
+
     Handler keepAliveHandler = new Handler();
     Runnable keepAliveRunnable = new Runnable() {
         @Override
@@ -68,11 +70,21 @@ public class ClientManager<T extends ClientConnection> {
         if(keepAliveStarted)return;
         keepAliveHandler.postDelayed(keepAliveRunnable, timerDelay);
         keepAliveStarted = true;
+        keepAlivePaused = false;
     }
 
     protected void stopKeepAlive(){
         keepAliveHandler.removeCallbacks(keepAliveRunnable);
         keepAliveStarted = false;
+        keepAlivePaused = false;
+    }
+
+    public void pauseKeepAlive(){
+        keepAlivePaused = true;
+    }
+
+    public void resumeKeepAlive(){
+        keepAlivePaused = false;
     }
 
     public ClientConnection getConnection(String idOrName){
@@ -196,6 +208,7 @@ public class ClientManager<T extends ClientConnection> {
     }
 
     protected int keepAlive(){
+        if(keepAlivePaused)return 0;
 
         if(SLog.LOG)SLog.i("CMGR", "Keep Alive Called!");
 

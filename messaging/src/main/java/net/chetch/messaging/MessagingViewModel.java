@@ -30,6 +30,7 @@ import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
+import android.provider.Settings.Secure;
 
 public class MessagingViewModel extends WebserviceViewModel implements IMessageHandler, IConnectionHandler {
     public enum MessagingServiceState{
@@ -129,12 +130,22 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         return client != null && client.isConnected();
     }
 
-    public void setClientName(String clName) throws Exception{
-        String cn = clName + "-" + UUID.nameUUIDFromBytes(clName.getBytes()).toString();
+    public void setClientName(String clName, Context ctx) throws Exception{
+        String s;
+        if(ctx == null){
+            s = clName;
+        } else {
+            s = Secure.getString(ctx.getContentResolver(), Secure.ANDROID_ID);
+        }
+        String cn = clName + "-" + UUID.nameUUIDFromBytes(s.getBytes()).toString();
         if (cn.length() > 255)
             throw new Exception("Client name of " + cn + " is too long ... must be less than 255 characters");
 
         clientName = cn;
+    }
+
+    public void setClientName(String clName) throws Exception{
+        setClientName(clName, null);
     }
 
     public String getClientName(){
@@ -262,10 +273,14 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 }
             }
 
-            if(ms.requiresPinging()){
-                getClient().sendPing(ms.name);
-                if(ms.firstPingSentOn == null)ms.firstPingSentOn = Calendar.getInstance();
-                if(SLog.LOG)SLog.i("MessagingViewModel", "Pinging " + ms.name);
+            if(!pingingServicesPaused && ms.requiresPinging() && isClientConnected()){
+                try {
+                    getClient().sendPing(ms.name);
+                    if (ms.firstPingSentOn == null) ms.firstPingSentOn = Calendar.getInstance();
+                    if (SLog.LOG) SLog.i("MessagingViewModel", "Pinging " + ms.name);
+                } catch (Exception e){
+                    throw e;
+                }
             }
         }
         return timerDelay;
@@ -304,6 +319,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         pingingServicesPaused = false;
         if(SLog.LOG)SLog.i("MVM", "Resuming ping services...");
     }
+
+
 
     @Override
     protected void handleRespositoryError(WebserviceRepository<?> repo, Throwable t) {
@@ -474,13 +491,15 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     @Override
     public void pause() {
-        pausePingServices();
+        if(isClientConnected())pausePingServices(); //this stops pinging the service
+        TCPClientManager.pause(); //this puases a connection reconnect
         super.pause();
     }
 
     @Override
     public void resume() {
-        resumePingServices();
+        TCPClientManager.resume(); //this resumes a connection reconnect
+        if(isClientConnected())resumePingServices(); //this resumes pinging the service
         super.resume();
     }
 }

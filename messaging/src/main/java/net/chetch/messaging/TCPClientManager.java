@@ -21,6 +21,14 @@ public class TCPClientManager extends ClientManager<TCPClient> {
         return null;
     }
 
+    public static void pause(){
+        if(instance != null)instance.pauseKeepAlive();
+    }
+
+    public static void resume(){
+        if(instance != null)instance.pauseKeepAlive();
+    }
+    
     private static TCPClientManager instance = null;
 
     public TCPClientManager(){
