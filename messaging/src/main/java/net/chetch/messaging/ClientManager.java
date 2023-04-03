@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.util.Log;
 
+import net.chetch.messaging.exceptions.ConnectClientException;
 import net.chetch.utilities.SLog;
 
 import java.util.ArrayList;
@@ -136,7 +137,7 @@ public class ClientManager<T extends ClientConnection> {
     public ClientConnection connect(String connectionString, String name, int timeout, String authToken) throws Exception {
         //here we create a connection request and
         if(currentRequest != null){
-            throw new Exception("There is still an ongoing connection request");
+            throw new ConnectClientException("There is still an ongoing connection request", currentRequest.request);
         }
 
         //check if there is already a connection with that name ... if it's good to go then just return it otherwise barf
@@ -146,7 +147,7 @@ public class ClientManager<T extends ClientConnection> {
                 startKeepAlive(10000);
                 return cnn;
             } else {
-                throw new Exception("There is already an existing connection of state " + cnn.getState());
+                throw new ConnectClientException("There is already an existing connection for " + name + " of state " + cnn.getState(), null);
             }
         }
 
@@ -181,12 +182,12 @@ public class ClientManager<T extends ClientConnection> {
                 Thread.sleep(250);
                 long elapsed = Calendar.getInstance().getTimeInMillis() - start;
                 if (timeout > 0 && elapsed > timeout) {
-                    throw new TimeoutException("ClientConection::connect Timeout occurred");
+                    throw new ConnectClientException("ClientConection::connect Timeout occurred", currentRequest.request);
                 }
             } while (!currentRequest.isFinished());
 
             if (currentRequest.failed) {
-                throw new Exception("Connection request failed " + currentRequest.reason4failure);
+                throw new ConnectClientException("Connection request failed " + currentRequest.reason4failure, currentRequest.request);
             }
         } catch (Exception e){
             currentRequest = null;
