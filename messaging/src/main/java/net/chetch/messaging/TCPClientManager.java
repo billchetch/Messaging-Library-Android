@@ -26,7 +26,7 @@ public class TCPClientManager extends ClientManager<TCPClient> {
     }
 
     public static void resume(){
-        if(instance != null)instance.pauseKeepAlive();
+        if(instance != null)instance.resumeKeepAlive();
     }
     
     private static TCPClientManager instance = null;
