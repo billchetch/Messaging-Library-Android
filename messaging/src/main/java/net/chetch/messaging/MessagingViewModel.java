@@ -395,8 +395,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                         if(ms.setState(MessagingServiceState.NOT_CONNECTED)){
                             liveDataMessagingService.postValue(ms);
                             setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
-                            return;
                         }
+                        return;
                     }
                 }
 

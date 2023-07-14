@@ -30,5 +30,6 @@ public enum MessageType {
     NOTIFICATION,
     SUBSCRIBE_RESPONSE,
     INITIALISE_RESPONSE,
-    ALERT
+    ALERT,
+    FINALISE
 }
