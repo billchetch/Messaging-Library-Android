@@ -21,6 +21,7 @@ import net.chetch.webservices.network.Services;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -233,6 +234,12 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         if(client != null && client.isConnected()){
             client.subscribe(f);
             if(ms != null)ms.subscribed = true;
+        }
+    }
+
+    public void addMessageFilters(Collection<? extends MessageFilter> filters) throws Exception {
+        for(MessageFilter f : filters){
+            addMessageFilter(f);
         }
     }
 
