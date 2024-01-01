@@ -44,6 +44,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
     //A client that this service subscribes to t
     public class MessagingService{
+        static final public String SERVICE_STATUS_COMMAND = "status";
+
         public boolean subscribed = false;
         public String name;
         public MessagingServiceState state;
@@ -54,6 +56,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         public Calendar lastErrorReceivedOn;
         public int maxDormantTime = 30;  //wait this many seconds before declaring the services as non responsive
         public int pingInterval = 15; //wait this many seconds after last message received before pinging the service
+
+        private boolean serviceIsReady = false;
 
         public MessagingService(String clientName, int timerDelay){
             name = clientName;
@@ -83,6 +87,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         public boolean setState(MessagingServiceState newState){
             if (state != newState){
                 state = newState;
+                serviceIsReady = false;
                 return true;
             } else {
                 return false;
@@ -92,6 +97,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         public void reset(){
             firstPingSentOn = null;
             lastMessageReceivedOn = null;
+            serviceIsReady = false;
+        }
+
+        public boolean isReady(){
+            return state == MessagingServiceState.RESPONDING && serviceIsReady;
         }
     }
 
@@ -157,26 +167,29 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         connectionString = cnnString;
     }
 
-    public ClientConnection connectClient(Observer observer) {
-        if(!isClientConnected()) {
-            try {
-                if (clientName == null || clientName.isEmpty())
-                    throw new Exception("clientName required");
-                if (connectionString == null || connectionString.isEmpty())
-                    throw new Exception("connectionString required");
-
-                client = TCPClientManager.connect(connectionString, clientName, serviceToken.getToken());
-                if(client.authToken != null){
-                    serviceToken.setToken(client.authToken);
-                    networkRepository.saveToken(serviceToken);
-                }
-            } catch (Exception e) {
-                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
-                setError(e);
-                return null;
-            }
+    public ClientConnection connectClient(Observer observer) throws Exception{
+        if(isClientConnected()){
+            throw new Exception("Client " + getClientName() + " is already connected!");
         }
 
+        try {
+            if (clientName == null || clientName.isEmpty())
+                throw new Exception("clientName required");
+            if (connectionString == null || connectionString.isEmpty())
+                throw new Exception("connectionString required");
+
+            client = TCPClientManager.connect(connectionString, clientName, serviceToken.getToken());
+            if(client.authToken != null){
+                serviceToken.setToken(client.authToken);
+                networkRepository.saveToken(serviceToken);
+            }
+        } catch (Exception e) {
+            if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
+            setError(e);
+            throw e;
+        }
+
+        //By here the client is successfully connected
         client.addMessageHandler(this);
         client.addConnectionHandler(this);
 
@@ -243,22 +256,6 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         }
     }
 
-    public void addMessagingService(String serviceClientName){
-        if(serviceClientName == null || messagingServices.containsKey(serviceClientName))return;
-
-        MessagingService ms = new MessagingService(serviceClientName, timerDelay);
-        messagingServices.put(serviceClientName, ms);
-
-        if(client != null && client.isConnected()){
-            try {
-                client.subscribe(serviceClientName);
-                ms.subscribed = true;
-            } catch (Exception e){
-                if(SLog.LOG)SLog.e("MessagingViewModel", e.getMessage());
-            }
-        }
-    }
-
     public MessagingService getMessaingService(String serviceClientName){
         if(serviceClientName == null || !messagingServices.containsKey(serviceClientName))return null;
 
@@ -276,17 +273,25 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             if(ms.state != MessagingServiceState.NOT_CONNECTED && !ms.isResponsive()){
                 if(ms.setState(MessagingServiceState.NOT_RESPONDING)) {
                     setError(new MessagingServiceException(ms, "Service " + ms.name + " is not responding after more than " + ms.maxDormantTime + " seconds"));
-                    liveDataMessagingService.postValue(ms);
+                    notifyMessaingServiceObservers(ms);
                 }
             }
 
-            if(!pingingServicesPaused && ms.requiresPinging() && isClientConnected()){
-                try {
-                    getClient().sendPing(ms.name);
-                    if (ms.firstPingSentOn == null) ms.firstPingSentOn = Calendar.getInstance();
-                    if (SLog.LOG) SLog.i("MessagingViewModel", "Pinging " + ms.name);
-                } catch (Exception e){
-                    throw e;
+            if(!pingingServicesPaused && isClientConnected()){
+                if(ms.requiresPinging()) {
+                    try {
+                        getClient().sendPing(ms.name);
+                        if (ms.firstPingSentOn == null) ms.firstPingSentOn = Calendar.getInstance();
+                        if (SLog.LOG) SLog.i("MessagingViewModel", "Pinging " + ms.name);
+                    } catch (Exception e) {
+                        throw e;
+                    }
+                }
+
+                //check if we need to do a service status request
+                if(!ms.isReady()){
+                    getClient().sendCommand(ms.name, MessagingService.SERVICE_STATUS_COMMAND);
+                    SLog.i("MessagingViewModel", "Sending status command to " + ms.name);
                 }
             }
         }
@@ -336,7 +341,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         //this means that an as
         if(t instanceof WebserviceException && !((WebserviceException)t).isServiceAvailable()){
             for(MessagingService ms : messagingServices.values()){
-                if(ms.setState(MessagingServiceState.NOT_FOUND))liveDataMessagingService.postValue(ms);
+                if(ms.setState(MessagingServiceState.NOT_FOUND))notifyMessaingServiceObservers(ms);
             }
         }
     }
@@ -373,13 +378,22 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
                 default:
                     msState = MessagingServiceState.RESPONDING;
+                    if(message.Type == MessageType.COMMAND_RESPONSE && !ms.isReady() && MessagingService.SERVICE_STATUS_COMMAND.equals(message.getString("OriginalCommand")) ){
+                        ms.serviceIsReady = message.getBoolean("Ready");
+                        notifyMessaingServiceObservers(ms);
+                        SLog.i("MessagingViewModel", "Received status command response...");
+
+                        if(isReady()){
+                            onReady();
+                        }
+                    }
                     break;
             }
             ms.lastMessage = message;
             ms.lastMessageReceivedOn = now;
 
             if(ms.setState(msState)){
-                liveDataMessagingService.postValue(ms);
+                notifyMessaingServiceObservers(ms);
                 if(msState == MessagingServiceState.NOT_CONNECTED) {
                     setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
                 }
@@ -390,7 +404,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         switch(message.Type){
             case SHUTDOWN:
                 for(MessagingService ms : messagingServices.values()) {
-                    if(ms.setState(MessagingServiceState.NOT_CONNECTED))liveDataMessagingService.postValue(ms);
+                    if(ms.setState(MessagingServiceState.NOT_CONNECTED))notifyMessaingServiceObservers(ms);
                 }
                 break;
 
@@ -400,7 +414,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     if(messagingServices.containsKey(service)){
                         MessagingService ms = messagingServices.get(service);
                         if(ms.setState(MessagingServiceState.NOT_CONNECTED)){
-                            liveDataMessagingService.postValue(ms);
+                            notifyMessaingServiceObservers(ms);
                             setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
                         }
                         return;
@@ -424,7 +438,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public void handleConnectionClosed(ClientConnection cnn) {
         stopTimer();
         for(MessagingService ms : messagingServices.values()) {
-            if(ms.setState(MessagingServiceState.NOT_CONNECTED))liveDataMessagingService.postValue(ms);
+            if(ms.setState(MessagingServiceState.NOT_CONNECTED))notifyMessaingServiceObservers(ms);
         }
     }
 
@@ -455,7 +469,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         DataStore<?> dataStore = super.loadData(observer);
         dataStore.observe(services-> {
             if(SLog.LOG)SLog.i("MessagingViewModel", "Loaded data...");
-            notifyLoading(observer, "Services", services);
+            notifyLoading(observer, "Retrieving token", services);
 
             //get token for service
             networkRepository.getToken(chetchMessagingService.getID(), clientName).observe(token->{
@@ -485,15 +499,23 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
         liveDataMessagingService.observe(owner, observer);
     }
 
+    protected void notifyMessaingServiceObservers(MessagingService ms){
+        liveDataMessagingService.postValue(ms);
+    }
+
     @Override
     public boolean isReady() {
         for(MessagingService ms : messagingServices.values()) {
-            if (ms.state != MessagingServiceState.RESPONDING || !ms.isResponsive()) {
+            if (ms.state != MessagingServiceState.RESPONDING || !ms.isResponsive() || !ms.isReady()) {
                 return false;
             }
         }
 
         return super.isReady() && isClientConnected();
+    }
+
+    public void onReady(){
+        SLog.i("MessagingViewModel", "View Model is ready for use");
     }
 
     @Override
