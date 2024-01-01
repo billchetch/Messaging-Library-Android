@@ -59,6 +59,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
         private boolean serviceIsReady = false;
 
+        public String serviceStatus;
+
         public MessagingService(String clientName, int timerDelay){
             name = clientName;
             state = MessagingServiceState.UNKNOWN;
@@ -88,6 +90,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             if (state != newState){
                 state = newState;
                 serviceIsReady = false;
+                serviceStatus = null;
                 return true;
             } else {
                 return false;
@@ -98,6 +101,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             firstPingSentOn = null;
             lastMessageReceivedOn = null;
             serviceIsReady = false;
+            serviceStatus = null;
         }
 
         public boolean isReady(){
@@ -350,6 +354,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
     public void handleReceivedMessage(Message message, ClientConnection cnn) {
         //handle messages intended for a service first
         if(message.Sender != null && messagingServices.containsKey(message.Sender)) {
+            boolean notifiyObservers = false;
             MessagingService ms = messagingServices.get(message.Sender);
             Calendar now = Calendar.getInstance();
             MessagingServiceState msState = MessagingServiceState.UNKNOWN;
@@ -357,6 +362,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                 case ERROR:
                     ms.lastErrorReceivedOn = now;
                     ms.lastError = message;
+                    notifiyObservers = true;
                     msState = MessagingServiceState.RESPONDING;
                     break;
 
@@ -380,7 +386,8 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     msState = MessagingServiceState.RESPONDING;
                     if(message.Type == MessageType.COMMAND_RESPONSE && !ms.isReady() && MessagingService.SERVICE_STATUS_COMMAND.equals(message.getString("OriginalCommand")) ){
                         ms.serviceIsReady = message.getBoolean("Ready");
-                        notifyMessaingServiceObservers(ms);
+                        ms.serviceStatus = message.getString("Status");
+                        notifiyObservers = true;
                         SLog.i("MessagingViewModel", "Received status command response...");
 
                         if(isReady()){
@@ -392,7 +399,7 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             ms.lastMessage = message;
             ms.lastMessageReceivedOn = now;
 
-            if(ms.setState(msState)){
+            if(ms.setState(msState) || notifiyObservers){
                 notifyMessaingServiceObservers(ms);
                 if(msState == MessagingServiceState.NOT_CONNECTED) {
                     setError(new MessagingServiceException(ms, message.hasValue() ? message.getValue().toString() : "no message available", message));
