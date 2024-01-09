@@ -8,6 +8,7 @@ import net.chetch.utilities.DelegateTypeAdapterFactory;
 import net.chetch.utilities.EnumTypeAdapater;
 import net.chetch.utilities.Utils;
 
+import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,8 +57,23 @@ public class Message{
         } else if(Enum.class.isAssignableFrom(cls)){
             try{
                 Integer n = convert(value, Integer.class);
+                Method m = null;
+                try {
+                    m = cls.getMethod("getValue");
+                } catch (NoSuchMethodException e){
+                    //faile silently
+                    m = null;
+                } catch (Exception e){
+                    throw e;
+                }
+                Integer v;
                 for(T evalue : cls.getEnumConstants()){
-                    if(((Enum)evalue).ordinal() == n )return (T)evalue;
+                    if(m != null){
+                        v = (Integer)m.invoke(evalue);
+                    } else{
+                        v = ((Enum)evalue).ordinal();
+                    }
+                    if(n.equals(v))return (T)evalue;
                 }
             } catch(Exception e){
                 //try a string

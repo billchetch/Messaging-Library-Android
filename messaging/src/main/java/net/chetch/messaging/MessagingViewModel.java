@@ -59,7 +59,11 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
 
         private boolean serviceIsReady = false;
 
-        public String serviceStatus;
+        public int serviceStatusCode = 0;
+
+        public String serviceStatusSummary;
+
+        public String serviceStatusDetail;
 
         public MessagingService(String clientName, int timerDelay){
             name = clientName;
@@ -90,7 +94,9 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             if (state != newState){
                 state = newState;
                 serviceIsReady = false;
-                serviceStatus = null;
+                serviceStatusSummary = null;
+                serviceStatusDetail = null;
+                serviceStatusCode = 0;
                 return true;
             } else {
                 return false;
@@ -101,7 +107,9 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
             firstPingSentOn = null;
             lastMessageReceivedOn = null;
             serviceIsReady = false;
-            serviceStatus = null;
+            serviceStatusSummary = null;
+            serviceStatusDetail = null;
+            serviceStatusCode = 0;
         }
 
         public boolean isReady(){
@@ -386,7 +394,9 @@ public class MessagingViewModel extends WebserviceViewModel implements IMessageH
                     msState = MessagingServiceState.RESPONDING;
                     if(message.Type == MessageType.COMMAND_RESPONSE && !ms.isReady() && MessagingService.SERVICE_STATUS_COMMAND.equals(message.getString("OriginalCommand")) ){
                         ms.serviceIsReady = message.getBoolean("Ready");
-                        ms.serviceStatus = message.getString("Status");
+                        ms.serviceStatusCode = message.getInt("StatusCode");
+                        ms.serviceStatusSummary = message.getString("StatusSummary");
+                        ms.serviceStatusDetail = message.getString("StatusDetail");
                         notifiyObservers = true;
                         SLog.i("MessagingViewModel", "Received status command response...");
 
