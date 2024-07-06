@@ -95,7 +95,8 @@ public class MainActivity extends GenericActivity {
             //String apiBaseURL = "http://192.168.1.100:8001/api/";
             //String apiBaseURL = "http://192.168.0.123:8001/api/";
             //String apiBaseURL = "http://192.168.0.150:8001/api/";
-            String apiBaseURL = "http://192.168.0.52:8001/api/";
+            //String apiBaseURL = "http://192.168.0.52:8001/api/";
+            String apiBaseURL = "http://192.168.2.88:8001/api/";
             NetworkRepository.getInstance().setAPIBaseURL(apiBaseURL);
         } catch (Exception e) {
             Log.e("MVM", e.getMessage());
@@ -103,12 +104,10 @@ public class MainActivity extends GenericActivity {
         }
 
         model = ViewModelProviders.of(this).get(MViewModel.class);
-
         model.getError().observe(this, throwable -> {
-
+            Log.e("error", "Some error");
         });
 
-        model.addMessagingService("BBAlarms");
         try {
             model.setClientName("RoundhouseBilly");
             connectManager.addModel(model);
