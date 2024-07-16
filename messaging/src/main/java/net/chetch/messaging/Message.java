@@ -91,12 +91,13 @@ public class Message{
     public String ID;
     public String ResponseID;
     public MessageType Type;
-    int SubType;
+    public int SubType;
     public String Target;
     public String Sender;
+    public String Tag;
     public String Signature;
 
-    HashMap<String, Object> Values = new HashMap<>();
+    Map<String, Object> Values = new HashMap<>();
 
     public Message(){
         ID = generateID();
@@ -104,6 +105,10 @@ public class Message{
 
     private String generateID(){
         return this.hashCode() + "-" + Calendar.getInstance().getTimeInMillis();
+    }
+
+    public Map<String, Object> getBody(){
+        return Values;
     }
 
     public Object getValue(String key){
@@ -206,6 +211,9 @@ public class Message{
         return map2return;
     }
 
+    public void setValue(String key, Object val){
+        addValue("key", val);
+    }
     public void addValue(String key, Object val){
         Values.put(key, val);
     }
@@ -217,9 +225,9 @@ public class Message{
         result += "Type: " + Type + lf;
         result += "SubType: " + SubType + lf;
         result += "Target: " + Target + lf;
+        result += "Tag: " + Tag + lf;
         result += "Sender: " + Sender;
         return result;
-
     }
 
     @Override
@@ -241,18 +249,21 @@ public class Message{
 
         initSerializer();
 
-        HashMap<String, Object> vals = new HashMap<>();
+        Map<String, Object> vals = new HashMap<>();
         vals.put("ID", ID);
         vals.put("ResponseID", ResponseID);
         vals.put("Type", Type);
         vals.put("SubType", SubType);
         vals.put("Target", Target);
         vals.put("Sender", Sender);
+        vals.put("Tag", Tag);
         vals.put("Signature", Signature);
 
+        Map<String, Object> body = new HashMap<>();
         for(Map.Entry<String, Object> entry : Values.entrySet()){
-            vals.put(entry.getKey(), entry.getValue());
+            body.put(entry.getKey(), entry.getValue());
         }
+        vals.put("Body", body);
 
         String serialized = gson.toJson(vals);
         return serialized;
@@ -288,9 +299,10 @@ public class Message{
         initSerializer();
 
         Message m = gson.fromJson(serialized, Message.class);
-        HashMap<String, Object> vals = gson.fromJson(serialized, HashMap.class);
+        Map<String, Object> vals = gson.fromJson(serialized, HashMap.class);
 
-        for(Map.Entry<String, Object> entry : vals.entrySet()){
+        Map<String, Object> body = (Map<String, Object>)vals.get("Body");
+        for(Map.Entry<String, Object> entry : body.entrySet()){
             m.addValue(entry.getKey(), entry.getValue());
         }
 
