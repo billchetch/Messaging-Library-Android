@@ -230,11 +230,20 @@ public class Message{
         return result;
     }
 
-    @Override
-    public String toString(){
+    public String toString(boolean includeBody){
         String result = toStringHeader();
 
+        if(includeBody) {
+            String lf = System.lineSeparator();
+            result += lf + lf;
+            result += getBody().toString();
+        }
         return result;
+    }
+
+    @Override
+    public String toString(){
+        return toString(true);
     }
 
     static private void initSerializer(){
