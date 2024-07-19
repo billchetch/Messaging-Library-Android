@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public abstract class MessageFilter implements IMessageHandler {
+public abstract class MessageFilter implements IMessageHandler, IMessageHandler2 {
 
     public String Sender;
     private List<MessageType> types = null;
@@ -60,6 +60,14 @@ public abstract class MessageFilter implements IMessageHandler {
 
     @Override
     public void handleReceivedMessage(Message message, ClientConnection cnn) {
+        if (matches(message))
+        {
+            onMatched(message);
+        }
+    }
+
+    @Override
+    public void onMessageReceived(Message message) {
         if (matches(message))
         {
             onMatched(message);
