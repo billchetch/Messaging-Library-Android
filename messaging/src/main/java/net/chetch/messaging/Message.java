@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class Message{
     static public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
@@ -97,7 +98,7 @@ public class Message{
     public String Tag;
     public String Signature;
 
-    Map<String, Object> Values = new HashMap<>();
+    Map<String, Object> Body = new TreeMap<>();
 
     public Message(){
         ID = generateID();
@@ -108,12 +109,12 @@ public class Message{
     }
 
     public Map<String, Object> getBody(){
-        return Values;
+        return Body;
     }
 
     public Object getValue(String key){
-        if(Values.containsKey(key)){
-            return Values.get(key);
+        if(Body.containsKey(key)){
+            return Body.get(key);
         } else {
             return null;
         }
@@ -128,7 +129,7 @@ public class Message{
     }
 
     public boolean hasValue(String key){
-        return Values.containsKey(key);
+        return Body.containsKey(key);
     }
 
     public boolean hasValue(){ return hasValue("Value"); }
@@ -211,11 +212,21 @@ public class Message{
         return map2return;
     }
 
+    public <T> T getAsClass(Class<T> cls, String key){
+        Object obj = key == null ? Body : getValue(key);
+        String serialized = gson.toJson(obj);
+        return gson.fromJson(serialized, cls);
+    }
+
+    public <T> T getAsClass(Class<T> cls){
+        return getAsClass(cls, null);
+    }
+
     public void setValue(String key, Object val){
         addValue("key", val);
     }
     public void addValue(String key, Object val){
-        Values.put(key, val);
+        Body.put(key, val);
     }
 
     public String toStringHeader(){
@@ -269,7 +280,7 @@ public class Message{
         vals.put("Signature", Signature);
 
         Map<String, Object> body = new HashMap<>();
-        for(Map.Entry<String, Object> entry : Values.entrySet()){
+        for(Map.Entry<String, Object> entry : Body.entrySet()){
             body.put(entry.getKey(), entry.getValue());
         }
         vals.put("Body", body);
@@ -304,17 +315,8 @@ public class Message{
     }
 
     static public Message deserialize(String serialized){
-
         initSerializer();
-
         Message m = gson.fromJson(serialized, Message.class);
-        Map<String, Object> vals = gson.fromJson(serialized, HashMap.class);
-
-        Map<String, Object> body = (Map<String, Object>)vals.get("Body");
-        for(Map.Entry<String, Object> entry : body.entrySet()){
-            m.addValue(entry.getKey(), entry.getValue());
-        }
-
         return m;
     }
 }
