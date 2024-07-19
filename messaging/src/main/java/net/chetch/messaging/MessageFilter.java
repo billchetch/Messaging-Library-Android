@@ -74,7 +74,7 @@ public abstract class MessageFilter implements IMessageHandler, IMessageHandler2
         }
     }
 
-    protected boolean matches(Message message)
+    public boolean matches(Message message)
     {
         boolean matched = true;
         if (Sender != null && message.Sender != null)

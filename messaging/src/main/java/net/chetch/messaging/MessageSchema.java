@@ -1,7 +1,6 @@
 package net.chetch.messaging;
 
 public class MessageSchema {
-    static public final String COMMAND_HELP = "help";
 
     static public Message createResponse(Message message){
         Message response = new Message();
@@ -32,5 +31,10 @@ public class MessageSchema {
 
     public MessageSchema(Message message){
         this.message = message;
+    }
+
+    public MessageSchema setMessage(Message message){
+        this.message = message;
+        return this;
     }
 }
