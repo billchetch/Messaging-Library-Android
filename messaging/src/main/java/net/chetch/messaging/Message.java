@@ -2,6 +2,8 @@ package net.chetch.messaging;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.ToNumberPolicy;
+import com.google.gson.TypeAdapter;
 
 import net.chetch.utilities.CalendarTypeAdapater;
 import net.chetch.utilities.DelegateTypeAdapterFactory;
@@ -18,9 +20,13 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class Message{
-    static public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss Z";
-
+    final static public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
+    static public String dateFormat = DEFAULT_DATE_FORMAT;
     static Gson gson = null;
+    static public void setDateFormat(String df){
+        dateFormat = df;
+    }
+
     //basic conversions based on expected results after deserialization (such as all numbers becom doubles)
     //or enums are usually their ordinal value but might be their string representation
     static private <T> T convert(Object value, Class<T> cls){
@@ -84,6 +90,9 @@ public class Message{
             }
         } else if(cls == Double.class){
             return (T)(Object)Double.parseDouble((value.toString()));
+        } else {
+            String serialized = gson.toJson(value);
+            return gson.fromJson(serialized, cls);
         }
         return null;
     }
@@ -159,28 +168,18 @@ public class Message{
         return convert(val, Double.class);
     }
 
-    public <T extends Enum> T getEnum(String key, Class<T> cls){
-        return getEnum(key, cls, null);
-    }
-
-    public <T extends Enum> T getEnum(String key, Class<T> cls, T defaultValue){
-        Object value = getValue(key);
-        T t = convert(value, cls);
-        return t == null ? defaultValue : t;
-    }
-
     public Calendar getCalendar(String key){
         return getCalendar(key, null);
     }
 
-    public Calendar getCalendar(String key, String dateFormat){
+    public Calendar getCalendar(String key, String format){
         try {
             String dateString = getString(key);
             if(dateString == null || dateString.isEmpty() || dateString.indexOf("0001-01-01") != -1){
                 return null;
             } else {
-                if(dateFormat == null)dateFormat = DEFAULT_DATE_FORMAT;
-                return Utils.parseDate(getString(key), dateFormat);
+                if(format == null)format = dateFormat; //DEFAULT_DATE_FORMAT;
+                return Utils.parseDate(getString(key), format);
             }
         } catch (Exception e){
             return null;
@@ -193,7 +192,8 @@ public class Message{
         List<T> l2r = new ArrayList<>();
 
         for(Object item : l){
-            T value = convert(item, cls);
+            //T value = convert(item, cls);
+            T value = getAsClass(cls, item);
             l2r.add(value);
         }
 
@@ -206,20 +206,25 @@ public class Message{
 
         HashMap<String, T> map2return = new HashMap<>();
         for(Map.Entry<String, Object> entry : map.entrySet()){
+            //probably replace this with getAsClass
             T value = convert(entry.getValue(), cls);
             map2return.put(entry.getKey(), value);
         }
         return map2return;
     }
 
-    public <T> T getAsClass(Class<T> cls, String key){
-        Object obj = key == null ? Body : getValue(key);
-        String serialized = gson.toJson(obj);
+    public <T> T getAsClass(Class<T> cls, Object value) {
+        String serialized = gson.toJson(value);
         return gson.fromJson(serialized, cls);
     }
 
+    public <T> T getAsClass(String key, Class<T> cls){
+        Object value = key == null ? Body : getValue(key);
+        return getAsClass(cls, value);
+    }
+
     public <T> T getAsClass(Class<T> cls){
-        return getAsClass(cls, null);
+        return getAsClass(cls, Body);
     }
 
     public void setValue(String key, Object val){
@@ -261,6 +266,8 @@ public class Message{
         if(gson == null){
             GsonBuilder builder = new GsonBuilder();
             builder.registerTypeAdapter(MessageType.class, new EnumTypeAdapater<MessageType>(MessageType.class));
+            builder.registerTypeAdapter(Calendar.class, new CalendarTypeAdapater(dateFormat));
+            builder.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE);
             gson = builder.create();
         }
     }
