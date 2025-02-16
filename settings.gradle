@@ -1,8 +1,8 @@
 include ':app', ':messaging'
 include ':webservices'
-project(':webservices').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/WebservicesTest/webservices')
+project(':webservices').projectDir=new File('/Users/billthorgerson/AndroidStudioProjects/WebserviceLibrary/webservices')
 include ':utilities'
-project(':utilities').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/Utils/utilities')
+project(':utilities').projectDir=new File('/Users/billthorgerson/AndroidStudioProjects/Utils/utilities')
 include ':appframework'
-project(':appframework').projectDir=new File('/Users/billthorgerson/Documents/AndroidStudioProjects/AppFrameworkLib/appframework')
+project(':appframework').projectDir=new File('/Users/billthorgerson/AndroidStudioProjects/AppFramework/appframework')
 

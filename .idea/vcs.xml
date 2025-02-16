@@ -2,8 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../AppFrameworkLib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../AppFramework" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../Utils" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/../WebservicesTest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../WebserviceLibrary" vcs="Git" />
   </component>
 </project>

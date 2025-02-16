@@ -34,9 +34,9 @@ public class BBAlarmsMessageSchema extends MessageSchema {
         return message.getString("DeviceID");
     }
 
-    public AlarmState getAlarmState(){
+    /*public AlarmState getAlarmState(){
         return message.getEnum("AlarmState", AlarmState.class);
-    }
+    }*/
 
     public Map<String, AlarmState> getAlarmStates(){
         return message.getMap("AlarmStates", AlarmState.class);
