@@ -5,8 +5,8 @@ import net.chetch.messaging.MessageType;
 
 abstract public class NotificationFilter extends MessageFilter {
 
-    public NotificationFilter(String sender, String requiredValues) {
-        super(sender, MessageType.NOTIFICATION, requiredValues);
+    public NotificationFilter(String sender, String requiredFields) {
+        super(sender, MessageType.NOTIFICATION, requiredFields);
     }
 
     public NotificationFilter(String sender){
