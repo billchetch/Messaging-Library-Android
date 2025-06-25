@@ -10,7 +10,9 @@ import net.chetch.utilities.DelegateTypeAdapterFactory;
 import net.chetch.utilities.EnumTypeAdapater;
 import net.chetch.utilities.Utils;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -292,8 +294,12 @@ public class Message{
         }
         vals.put("Body", body);
 
-        String serialized = gson.toJson(vals);
-        return serialized;
+        return gson.toJson(vals);
+    }
+
+    public byte[] serialize(String characterEncoding) throws UnsupportedEncodingException {
+        String s = serialize();
+        return s.getBytes(characterEncoding);
     }
 
     static private Object extractValue(HashMap<String, Object> vals, String key){
