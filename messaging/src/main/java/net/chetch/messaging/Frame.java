@@ -69,7 +69,7 @@ public class Frame {
         }
     }
 
-    public static interface IFrameCompleteListener{
+    public interface IFrameCompleteListener{
         void onComplete(byte[] payload);
     }
 
