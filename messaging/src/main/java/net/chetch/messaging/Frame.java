@@ -1,5 +1,7 @@
 package net.chetch.messaging;
 
+import net.chetch.messaging.exceptions.FrameException;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,9 +31,9 @@ public class Frame {
     public class FrameDimensions{
         public int schema; //nb this is the dimension NOT the schema value
         public int encoding;  //nb this is the dimension NOT the encoding value
-        public int payloadSize;
-        public int checksum;
-        public int payload = -1;
+        public int payloadSize; //number of bytes to use to specify payload size
+        public int checksum; //number of bytes to reserve for the checksum value
+        public int payload = -1; //the actual size of the payload
 
         public FrameDimensions(FrameSchema schema) {
             this.schema = 1; //nb this is the dimension NOT the schema value
@@ -108,7 +110,39 @@ public class Frame {
         dimensions.payload = bytes.length;
     }
 
-    public byte[] getPayload(){
+    public byte[] getBytes(boolean addChecksum) throws Exception{
+        if (dimensions.payload <= 0) throw new FrameException(FrameError.NO_PAYLOAD);
 
+        byte[] b2r = new byte[dimensions.getSize()];
+
+        if (addChecksum)
+        {
+            if(dimensions.checksum <= 0)throw new FrameException(FrameError.NO_DIMENSIONS, "No checksum dimension");
+            switch (schema)
+            {
+                case SMALL_SIMPLE_CHECKSUM:
+                case MEDIUM_SIMPLE_CHECKSUM:
+                    int sum = 0;
+                    int csumIdx = dimensions.getChecksumIndex();
+                    for(int i = 0; i < csumIdx; i++){
+                        b2r[i] = this.bytes.get(i);
+                        sum += b2r[i];
+                    }
+                    for(int i = 0; i < dimensions.checksum; i++){
+                        byte b = (byte)(sum & 0xFF);
+                        b2r[csumIdx + i] = b;
+                        sum = sum >> 8;
+                    }
+                    break;
+            }
+        } else {
+            for(int i = 0; i < this.bytes.size(); i++){
+                b2r[i] = this.bytes.get(i);
+            }
+        }
+
+        return b2r;
     }
+
+    public byte[] getBytes() throws Exception{ return getBytes(true); }
 }
