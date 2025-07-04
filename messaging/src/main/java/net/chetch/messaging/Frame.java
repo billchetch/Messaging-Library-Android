@@ -49,7 +49,7 @@ public class Frame {
                 case MEDIUM_NO_CHECKSUM:
                 case MEDIUM_SIMPLE_CHECKSUM:
                     payloadSize = 2;
-                    checksum = schema == FrameSchema.MEDIUM_SIMPLE_CHECKSUM ? 1 : 0;
+                    checksum = schema == FrameSchema.MEDIUM_SIMPLE_CHECKSUM ? 2 : 0;
                     break;
             }
         }
@@ -193,11 +193,7 @@ public class Frame {
         }
         else if (this.bytes.size() == dimensions.getPayloadIndex())
         {
-            int n = 0;
-            for(int i = 0; i < dimensions.payloadSize; i++){
-                n += (int)(bytes.get(i + dimensions.getPayloadSizeIndex()) & 0xFF);
-            }
-            dimensions.payload = n;
+            dimensions.payload = getInt(dimensions.getPayloadSizeIndex(), dimensions.payloadSize);
             if(dimensions.payload <= 0)
             {   throw new FrameException(FrameError.INCOMPLETE_DATA, "Payload dimensions must be 1 or more");
             }
@@ -270,11 +266,7 @@ public class Frame {
                     }
 
                     //read the check sum
-                    int csum = 0;
-                    for(int i = 0; i < dimensions.checksum; i++){
-                        csum += (int)(this.bytes.get(i + csumIdx) & 0xFF);
-                    }
-
+                    int csum = getInt(csumIdx, dimensions.checksum);
                     if(sum != csum){
                         String msg = "Supplied checksum " + csum + " != " + sum + " calculated checksum";
                         throw new FrameException(Frame.FrameError.CHECKSUM_FAILED, msg);
@@ -282,5 +274,22 @@ public class Frame {
                     break;
             }
         }
+    }
+
+    private int getInt(int startIdx, int count) throws Exception{
+        if(startIdx + count > this.bytes.size()){
+            throw new IndexOutOfBoundsException("Count of " + count + " is out of bounds");
+        }
+        if(count <= 0){
+            throw new IllegalArgumentException("Count must be positive");
+        }
+
+        int n = 0;
+        for(int i = 0; i < count; i++){
+            int b = (this.bytes.get(startIdx + i) & 0xFF);
+            b = b << i*8;
+            n += b;
+        }
+        return n;
     }
 }
