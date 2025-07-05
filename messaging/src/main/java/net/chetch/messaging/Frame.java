@@ -70,7 +70,7 @@ public class Frame {
     }
 
     public interface IFrameCompleteListener{
-        void onComplete(byte[] payload);
+        void onFrameComplete(byte[] payload);
     }
 
     public FrameSchema schema;
@@ -224,7 +224,7 @@ public class Frame {
         if(addByte(b)){
             validate();
             if(this.frameCompleteListener != null){
-                this.frameCompleteListener.onComplete(getPayload());
+                this.frameCompleteListener.onFrameComplete(getPayload());
             }
             reset();
         }
