@@ -31,7 +31,7 @@ public class Message{
 
     //basic conversions based on expected results after deserialization (such as all numbers becom doubles)
     //or enums are usually their ordinal value but might be their string representation
-    static private <T> T convert(Object value, Class<T> cls){
+    static public <T> T convert(Object value, Class<T> cls){
         if(value == null)return null;
 
         if(cls == Boolean.class){
