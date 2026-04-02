@@ -264,6 +264,9 @@ public class Frame {
                     for(int i = 0; i < csumIdx; i++){
                         sum += (int)(this.bytes.get(i) & 0xFF);
                     }
+                    if(schema == FrameSchema.SMALL_SIMPLE_CHECKSUM) {
+                        sum = sum & 0xFF; //ensure only one byte
+                    }
 
                     //read the check sum
                     int csum = getInt(csumIdx, dimensions.checksum);
