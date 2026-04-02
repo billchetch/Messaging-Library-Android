@@ -223,7 +223,7 @@ public class Frame {
     {
         if(addByte(b)){
             validate();
-            if(this.frameCompleteListener != null){
+            if (this.frameCompleteListener != null) {
                 this.frameCompleteListener.onFrameComplete(getPayload());
             }
             reset();
@@ -271,7 +271,7 @@ public class Frame {
                     //read the check sum
                     int csum = getInt(csumIdx, dimensions.checksum);
                     if(sum != csum){
-                        String msg = "Supplied checksum " + csum + " != " + sum + " calculated checksum";
+                        String msg = "Supplied checksum at index " + csumIdx + " of " + csum + " != " + sum + " calculated checksum";
                         throw new FrameException(Frame.FrameError.CHECKSUM_FAILED, msg);
                     }
                     break;
