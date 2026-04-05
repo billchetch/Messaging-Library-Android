@@ -32,6 +32,6 @@ public enum MessageType {
     INITIALISE_RESPONSE,
     ALERT,
     FINALISE,
-    PRESENCE_REQUEST,
+    PRESENCE,
     PRESENCE_RESPONSE,
 }
