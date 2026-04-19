@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class Message{
+public class Message implements IMessage{
     final static public String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
     static public String dateFormat = DEFAULT_DATE_FORMAT;
     static Gson gson = null;
