@@ -15,6 +15,7 @@ public class MessageLog<T extends MessageLog.ILogItem> {
         IMessage message = null;
     }
 
+
     private final T[] data;
     final private int size;
     private int head = 0; // Point to start of data
