@@ -4,6 +4,7 @@ import static java.lang.Math.min;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 public class MessageLog<T extends MessageLog.ILogItem> {
 
@@ -13,6 +14,10 @@ public class MessageLog<T extends MessageLog.ILogItem> {
         LocalDateTime created = null;
 
         IMessage message = null;
+    }
+
+    public interface IFilter<T>{
+        boolean matches(T logItem);
     }
 
 
@@ -57,20 +62,31 @@ public class MessageLog<T extends MessageLog.ILogItem> {
         return count;
     }
 
-    public void copyTo(Collection<T> target, boolean reverse){
-        if(reverse){
-            for (int i = count - 1; i >= 0; i--) {
-                target.add(get(i));
+    public boolean matches(T item, Collection<IFilter<T>> filters){
+        boolean matches = true;
+        if(filters != null) {
+            for (IFilter filter : filters) {
+                if (filter != null && !filter.matches(item)) {
+                    matches = false;
+                    break;
+                }
             }
-        } else {
-            for (int i = 0; i < count; i++) {
-                target.add(get(i));
+        }
+        return matches;
+    }
+
+    public void copyTo(Collection<T> target, boolean reverse, Collection<IFilter<T>> filters){
+        for (int i = 0; i < count; i++) {
+            int idx = reverse ? count - 1 - i : i;
+            T item = get(idx);
+            if(matches(item, filters)) {
+                target.add(item);
             }
         }
     }
 
     public void copyTo(Collection<T> target){
-        copyTo(target, false);
+        copyTo(target, false, null);
     }
 
 }
