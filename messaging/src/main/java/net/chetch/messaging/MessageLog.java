@@ -27,6 +27,8 @@ public class MessageLog<T extends MessageLog.ILogItem> {
     private int tail = 0; // Point to next empty spot
     private int count = 0; // Number of items currently stored
 
+    private final  Object addLock = new Object();
+
 
     @SuppressWarnings("unchecked")
     public MessageLog(int size) {
@@ -36,12 +38,14 @@ public class MessageLog<T extends MessageLog.ILogItem> {
 
 
     public void add(T value) {
-        data[tail] = value;
-        tail = (tail + 1) % size; // Wraps back to 0 if at the end
-        if (count < size) {
-            count++;
-        } else {
-            head = (head + 1) % size; // Overwrite oldest data
+        synchronized (addLock) {
+            data[tail] = value;
+            tail = (tail + 1) % size; // Wraps back to 0 if at the end
+            if (count < size) {
+                count++;
+            } else {
+                head = (head + 1) % size; // Overwrite oldest data
+            }
         }
     }
 
@@ -76,11 +80,13 @@ public class MessageLog<T extends MessageLog.ILogItem> {
     }
 
     public void copyTo(Collection<T> target, boolean reverse, Collection<IFilter<T>> filters){
-        for (int i = 0; i < count; i++) {
-            int idx = reverse ? count - 1 - i : i;
-            T item = get(idx);
-            if(matches(item, filters)) {
-                target.add(item);
+        synchronized (addLock) {
+            for (int i = 0; i < count; i++) {
+                int idx = reverse ? count - 1 - i : i;
+                T item = get(idx);
+                if (matches(item, filters)) {
+                    target.add(item);
+                }
             }
         }
     }
