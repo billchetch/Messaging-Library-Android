@@ -25,7 +25,8 @@ public class Frame {
         NON_VALID_ENCODING,
         CHECKSUM_FAILED,
         ADD_TIMEOUT,
-        NON_VALID_PAYLOAD_SIZE
+        NON_VALID_PAYLOAD_SIZE,
+        NO_START_INDEX_FOUND
     }
 
     public static class FrameDimensions{
@@ -99,6 +100,14 @@ public class Frame {
     }
     public Frame(FrameSchema schema){
         this(schema, MessageEncoding.BYTES_ARRAY, null);
+    }
+
+    public boolean isEmpty(){
+        return bytes.isEmpty();
+    }
+
+    public boolean isComplete(){
+        return !isEmpty() && complete;
     }
 
     public void setPayload(byte[] bytes){
@@ -177,7 +186,7 @@ public class Frame {
 
         if (this.bytes.isEmpty())
         {
-            if(b != (byte)FrameSchema.valueOf(this.schema.toString()).ordinal())
+            if(b != (byte)this.schema.ordinal())
             {
                 throw new FrameException(FrameError.NON_VALID_SCHEMA, "received " + b + " which does not match this frames schema of " + schema);
             }
@@ -211,15 +220,41 @@ public class Frame {
         return complete;
     }
 
-    public void add(byte[] bytes) throws Exception
-    {
-        for(byte b : bytes) {
-            add(b);
+    public void add(byte[] bytes, int readUntil) throws Exception {
+        int startSeekAt = 0;
+
+        while(startSeekAt < readUntil) {
+            int startAddingAt = -1;
+            if (isEmpty()) { // we seek from a certain position
+                for (int i = startSeekAt; i < readUntil; i++) {
+                    byte b = bytes[i];
+                    if (b == (byte) schema.ordinal() && i + 1 < bytes.length && bytes[i + 1] == (byte) encoding.ordinal()) {
+                        startAddingAt = i;
+                        break;
+                    }
+                }
+                if(startAddingAt == -1){
+                    throw new FrameException(FrameError.NO_START_INDEX_FOUND, "Could not find a place to start");
+                }
+            } else {
+                startAddingAt = 0;
+            }
+
+            for (int i = startAddingAt; i < readUntil; i++) {
+                startSeekAt = i + 1;
+                if (add(bytes[i])) {
+                    break;
+                }
+            }
         }
     }
 
+    public void add(byte[] bytes) throws Exception {
+        add(bytes, bytes.length);
+    }
+
     //Add a byte and capture some stuff
-    public void add(byte b) throws Exception
+    public boolean add(byte b) throws Exception
     {
         if(addByte(b)){
             validate();
@@ -227,6 +262,9 @@ public class Frame {
                 this.frameCompleteListener.onFrameComplete(getPayload());
             }
             reset();
+            return true;
+        } else {
+            return false;
         }
     }
 
