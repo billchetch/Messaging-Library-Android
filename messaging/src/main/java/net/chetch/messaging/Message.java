@@ -274,7 +274,7 @@ public class Message implements IMessage{
         }
     }
 
-    public String serialize(){
+    public String toJson(){
 
         initSerializer();
 
@@ -298,8 +298,16 @@ public class Message implements IMessage{
     }
 
     public byte[] serialize(String characterEncoding) throws UnsupportedEncodingException {
-        String s = serialize();
+        String s = toJson();
         return s.getBytes(characterEncoding);
+    }
+
+    public byte[] serialize(){
+        try {
+            return serialize(null);
+        } catch(Exception e){
+            return null;
+        }
     }
 
     static private Object extractValue(HashMap<String, Object> vals, String key){
@@ -331,6 +339,11 @@ public class Message implements IMessage{
         initSerializer();
         Message m = gson.fromJson(serialized, Message.class);
         return m;
+    }
+
+    @Override
+    public void deserialize(byte[] bytes) throws Exception {
+        throw new Exception("Not yet implemented!");
     }
 }
 

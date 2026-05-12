@@ -272,7 +272,7 @@ abstract public class ClientConnection {
         if(signMessage){
             message.Signature = createSignature(message.Sender);
         }
-        String serialized = message.serialize();
+        String serialized = message.toJson();
         write(serialized);
         messagesSent++;
     }

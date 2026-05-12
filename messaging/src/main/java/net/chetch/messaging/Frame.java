@@ -222,19 +222,27 @@ public class Frame {
 
     public void add(byte[] bytes, int readUntil) throws Exception {
         int startSeekAt = 0;
+        int frameCount = 0;
+        readUntil = Math.min(bytes.length, readUntil);
 
         while(startSeekAt < readUntil) {
             int startAddingAt = -1;
             if (isEmpty()) { // we seek from a certain position
                 for (int i = startSeekAt; i < readUntil; i++) {
                     byte b = bytes[i];
-                    if (b == (byte) schema.ordinal() && i + 1 < bytes.length && bytes[i + 1] == (byte) encoding.ordinal()) {
+                    if (b == (byte) schema.ordinal() && i + 1 < readUntil && bytes[i + 1] == (byte) encoding.ordinal()) {
                         startAddingAt = i;
                         break;
                     }
                 }
                 if(startAddingAt == -1){
-                    throw new FrameException(FrameError.NO_START_INDEX_FOUND, "Could not find a place to start");
+                    if(frameCount == 0) {
+                        //Nothing but noise so throw
+                        throw new FrameException(FrameError.NO_START_INDEX_FOUND, "Could not find a place to start");
+                    } else {
+                        //Tail of bytes just noise so return
+                        return;
+                    }
                 }
             } else {
                 startAddingAt = 0;
@@ -243,6 +251,7 @@ public class Frame {
             for (int i = startAddingAt; i < readUntil; i++) {
                 startSeekAt = i + 1;
                 if (add(bytes[i])) {
+                    frameCount++;
                     break;
                 }
             }
