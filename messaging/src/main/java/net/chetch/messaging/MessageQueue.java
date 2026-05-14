@@ -11,6 +11,8 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class MessageQueue<M extends IMessage> implements Frame.IFrameCompleteListener {
+    static final int DEFAULT_WAIT_BEFORE_DISPATCH = 100;
+    static final int DEFAULT_THROTTLE_DISPATCH = 10;
 
     public interface IDispatchListener<M>{
         void onMessageDispatch(M message);
@@ -32,15 +34,26 @@ public class MessageQueue<M extends IMessage> implements Frame.IFrameCompleteLis
 
     Class<M> messageClass;
 
-    int waitBeforeDispatch = 100;
+    int waitBeforeDispatch = DEFAULT_WAIT_BEFORE_DISPATCH;
+    int throttleDispatch = 0;
 
     boolean cancelled = false;
 
 
-    public MessageQueue(String name, Class<M> cls,  Frame.FrameSchema schema, MessageEncoding encoding){
+    public MessageQueue(String name, Class<M> cls,  Frame.FrameSchema schema, MessageEncoding encoding, int waitBeforeDispatch, int throttleDispatch){
         this.name = name;
         this.messageClass = cls;
         frame = new Frame(schema, encoding, this);
+        setThrottling(waitBeforeDispatch, throttleDispatch);
+    }
+
+    public MessageQueue(String name, Class<M> cls,  Frame.FrameSchema schema, MessageEncoding encoding){
+        this(name, cls, schema, encoding, DEFAULT_WAIT_BEFORE_DISPATCH, DEFAULT_THROTTLE_DISPATCH);
+    }
+
+    public void setThrottling(int waitBeforeDispatch, int throttleDispatch){
+        this.waitBeforeDispatch = waitBeforeDispatch;
+        this.throttleDispatch = throttleDispatch;
     }
 
     public void setDispatchListener(IDispatchListener<M> listener){
@@ -57,6 +70,7 @@ public class MessageQueue<M extends IMessage> implements Frame.IFrameCompleteLis
         }
 
         if(dispatchThreadHandler != null) {
+            SLog.i("MQ-" + name, "Added " + message + " and now posting to dispatch q-size currently = " + queue.size());
             dispatchThreadHandler.postDelayed(this::dispatch, waitBeforeDispatch);
         }
     }
@@ -102,11 +116,17 @@ public class MessageQueue<M extends IMessage> implements Frame.IFrameCompleteLis
         synchronized(nqLock) {
             while(!queue.isEmpty() && !cancelled) {
                 M message = queue.remove();
-                //SLog.i("MQ-" + name, "Dispatching message");
+                SLog.i("MQ-" + name, "Dispatching message " + message + " " + queue.size() + " remaining.");
                 if(dispatchListener != null){
                     dispatchListener.onMessageDispatch(message);
                 }
-                //TODO: add a delay here?
+                if(!queue.isEmpty() && throttleDispatch > 0){
+                    try {
+                        Thread.sleep(throttleDispatch);
+                    } catch (Exception e){
+                        SLog.e("MQ-" + name, "di1patch error: " + e.getMessage());
+                    }
+                }
             }
         }
     }

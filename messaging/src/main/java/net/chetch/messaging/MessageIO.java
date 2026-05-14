@@ -14,6 +14,19 @@ abstract public class MessageIO<M extends IMessage>  {
         qOut.setDispatchListener(this::onMessageOut);
     }
 
+    public void setInThrottling(int waitBeforeDispatch, int throttleDispatch){
+        qIn.setThrottling(waitBeforeDispatch, throttleDispatch);
+    }
+
+    public void setOutThrottling(int waitBeforeDispatch, int throttleDispatch){
+        qOut.setThrottling(waitBeforeDispatch, throttleDispatch);
+    }
+
+    public void setThrottling(int waitBeforeDispatch, int throttleDispatch){
+        setInThrottling(waitBeforeDispatch, throttleDispatch);
+        setOutThrottling(waitBeforeDispatch, throttleDispatch);
+    }
+
     protected abstract void onMessageIn(M message);
 
     protected abstract void onMessageOut(M message);
