@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class MessageQueue<M extends IMessage> implements Frame.IFrameCompleteListener {
-    static final int DEFAULT_WAIT_BEFORE_DISPATCH = 100;
+    static final int DEFAULT_WAIT_BEFORE_DISPATCH = 20;
     static final int DEFAULT_THROTTLE_DISPATCH = 10;
 
     public interface IDispatchListener<M>{

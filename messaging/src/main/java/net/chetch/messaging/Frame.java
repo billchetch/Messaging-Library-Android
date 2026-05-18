@@ -68,6 +68,10 @@ public class Frame {
             if (payload <= 0) return -1;
             return schema + encoding + payloadSize + payload + checksum;
         }
+
+        public int minSize(){
+            return schema + encoding + payloadSize + 1 + checksum;
+        }
     }
 
     public interface IFrameCompleteListener{
@@ -230,7 +234,7 @@ public class Frame {
             if (isEmpty()) { // we seek from a certain position
                 for (int i = startSeekAt; i < readUntil; i++) {
                     byte b = bytes[i];
-                    if (b == (byte) schema.ordinal() && i + 1 < readUntil && bytes[i + 1] == (byte) encoding.ordinal()) {
+                    if (b == (byte) schema.ordinal() && (i + 1 == readUntil || (i + 1 < readUntil && bytes[i + 1] == (byte) encoding.ordinal()))) {
                         startAddingAt = i;
                         break;
                     }
